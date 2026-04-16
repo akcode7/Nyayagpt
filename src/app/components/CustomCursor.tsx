@@ -30,30 +30,14 @@ export function CustomCursor() {
         transition: "opacity 0.3s ease",
       }}
     >
-      {/* Outer ring — greyish, clearly visible */}
+      {/* Cursor dot */}
       <div
         style={{
           position: "fixed",
-          left: pos.x - 16,
-          top: pos.y - 16,
-          width: 32,
-          height: 32,
-          borderRadius: "50%",
-          border: "1.5px solid rgba(100, 100, 100, 0.65)",
-          background: "rgba(160, 155, 150, 0.12)",
-          pointerEvents: "none",
-          zIndex: 9999,
-          transition: "left 0.04s linear, top 0.04s linear",
-        }}
-      />
-      {/* Inner dot */}
-      <div
-        style={{
-          position: "fixed",
-          left: pos.x - 3,
-          top: pos.y - 3,
-          width: 6,
-          height: 6,
+          left: pos.x - 4,
+          top: pos.y - 4,
+          width: 8,
+          height: 8,
           borderRadius: "50%",
           background: "rgba(80, 78, 76, 0.75)",
           pointerEvents: "none",
