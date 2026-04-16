@@ -1,0 +1,438 @@
+/* ─── NyayaBot Custom CSS — Constitutional B&W Theme ─── */
+
+/* Marquee */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Chat float */
+@keyframes float-chat {
+  0%, 100% {
+    transform: translateY(0px) rotate(-1deg);
+    filter: drop-shadow(0 24px 40px rgba(0,0,0,0.13));
+  }
+  50% {
+    transform: translateY(-14px) rotate(-1deg);
+    filter: drop-shadow(0 40px 60px rgba(0,0,0,0.18));
+  }
+}
+
+/* CTA glow — ink black pulse */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+  50%       { box-shadow: 0 12px 48px rgba(0,0,0,0.55), 0 0 80px rgba(0,0,0,0.12); }
+}
+
+/* Cursor ring spin */
+@keyframes cursor-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Cursor dot pulse */
+@keyframes dot-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.4); opacity: 0.7; }
+}
+
+/* Typing blink */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* Shimmer on logo strip */
+@keyframes shimmer {
+  0%   { opacity: 0.25; }
+  50%  { opacity: 0.5; }
+  100% { opacity: 0.25; }
+}
+
+/* Fade + slide up */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Utility Classes ─── */
+
+.marquee-track {
+  animation: marquee 40s linear infinite;
+}
+
+.chat-float {
+  animation: float-chat 5s ease-in-out infinite;
+  will-change: transform, filter;
+}
+
+.cta-glow {
+  animation: glow-pulse 2.2s ease-in-out infinite;
+}
+
+.cursor-ring-spin {
+  animation: cursor-spin 8s linear infinite;
+}
+
+/* ─── Brush Underline — Ink style ─── */
+.brush-underline {
+  position: relative;
+  display: inline;
+}
+.brush-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0D0D0D, #3D3830);
+  border-radius: 2px;
+  opacity: 0.7;
+}
+
+/* ─── Responsive Hero Headline ─── */
+.nyaya-h1 {
+  font-size: clamp(36px, 5.5vw, 82px);
+  line-height: 1.05;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 700;
+}
+
+.nyaya-h2 {
+  font-size: clamp(28px, 4vw, 52px);
+  line-height: 1.1;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+.nyaya-h2-light {
+  font-size: clamp(28px, 4vw, 52px);
+  line-height: 1.1;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 300;
+}
+
+.nyaya-h3 {
+  font-size: clamp(24px, 3vw, 42px);
+  line-height: 1.15;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 700;
+}
+
+.nyaya-cta-headline {
+  font-size: clamp(36px, 5.5vw, 72px);
+  line-height: 1.08;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 700;
+}
+
+.nyaya-step-headline {
+  font-size: clamp(26px, 3.5vw, 44px);
+  line-height: 1.12;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 700;
+}
+
+.dm-sans {
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+.devanagari-font {
+  font-family: 'Noto Serif Devanagari', serif;
+}
+
+/* ─── Noise Hero Overlay ─── */
+.hero-noise {
+  position: relative;
+  overflow: hidden;
+}
+.hero-noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Scrollbar — light theme ─── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #F7F4EE; }
+::-webkit-scrollbar-thumb { background: #C8C3B8; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #0D0D0D; }
+
+/* ─── Feature card hover ─── */
+.feature-card {
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.feature-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(0,0,0,0.2) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.08);
+}
+
+/* ─── Keyframe: btn-17 text scroll bounce ─── */
+@keyframes btn-move-up {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(80%); }
+  51%  { transform: translateY(-80%); }
+  100% { transform: translateY(0); }
+}
+
+/* ─── Ghost button — btn-17 (parchment base → dark fill sweep) ─── */
+.ghost-btn,
+.ghost-btn *,
+.ghost-btn :after,
+.ghost-btn :before,
+.ghost-btn:after,
+.ghost-btn:before {
+  border: 0 solid;
+  box-sizing: border-box;
+}
+
+.ghost-btn {
+  -webkit-tap-highlight-color: transparent;
+  background-color: #F8F5EF;
+  background-image: none;
+  cursor: pointer;
+  -webkit-mask-image: -webkit-radial-gradient(#000, #fff);
+  position: relative;
+  overflow: hidden;
+  z-index: 0;
+  border-radius: 99rem;
+  border: 2px solid #3D3830 !important;
+  outline: none;
+  transition: none;
+}
+
+.ghost-btn .text-container {
+  display: block;
+  mix-blend-mode: difference;
+  overflow: hidden;
+  position: relative;
+}
+
+.ghost-btn .text {
+  display: block;
+  position: relative;
+  color: #fff;
+}
+
+.ghost-btn:hover .text {
+  animation: btn-move-up 0.3s forwards;
+}
+
+.ghost-btn:before,
+.ghost-btn:after {
+  --skew: 0.2;
+  background: #0D0D0D;
+  content: "";
+  display: block;
+  height: 102%;
+  left: calc(-50% - 50% * var(--skew));
+  pointer-events: none;
+  position: absolute;
+  top: -104%;
+  transform: skew(calc(150deg * var(--skew))) translateY(var(--progress, 0));
+  transition: transform 0.2s ease;
+  width: 100%;
+  z-index: -1;
+}
+
+.ghost-btn:after {
+  --progress: 0%;
+  left: calc(50% + 50% * var(--skew));
+  top: 102%;
+  z-index: -1;
+}
+
+.ghost-btn:hover:before {
+  --progress: 100%;
+}
+
+.ghost-btn:hover:after {
+  --progress: -102%;
+}
+
+/* ─── Primary button — btn-17 (ink base → white fill sweep) ─── */
+.primary-btn,
+.primary-btn *,
+.primary-btn :after,
+.primary-btn :before,
+.primary-btn:after,
+.primary-btn:before {
+  border: 0 solid;
+  box-sizing: border-box;
+}
+
+.primary-btn {
+  -webkit-tap-highlight-color: transparent;
+  background-color: #0D0D0D;
+  background-image: none;
+  cursor: pointer;
+  -webkit-mask-image: -webkit-radial-gradient(#000, #fff);
+  position: relative;
+  overflow: hidden;
+  z-index: 0;
+  border-radius: 99rem;
+  border: 2px solid rgba(255, 255, 255, 0.18) !important;
+  outline: none;
+  transition: none;
+}
+
+.primary-btn .text-container {
+  display: block;
+  mix-blend-mode: difference;
+  overflow: hidden;
+  position: relative;
+}
+
+.primary-btn .text {
+  display: block;
+  position: relative;
+  color: #fff;
+}
+
+.primary-btn:hover .text {
+  animation: btn-move-up 0.3s forwards;
+}
+
+.primary-btn:before,
+.primary-btn:after {
+  --skew: 0.2;
+  background: #fff;
+  content: "";
+  display: block;
+  height: 102%;
+  left: calc(-50% - 50% * var(--skew));
+  pointer-events: none;
+  position: absolute;
+  top: -104%;
+  transform: skew(calc(150deg * var(--skew))) translateY(var(--progress, 0));
+  transition: transform 0.2s ease;
+  width: 100%;
+  z-index: -1;
+}
+
+.primary-btn:after {
+  --progress: 0%;
+  left: calc(50% + 50% * var(--skew));
+  top: 102%;
+  z-index: -1;
+}
+
+.primary-btn:hover:before {
+  --progress: 100%;
+}
+
+.primary-btn:hover:after {
+  --progress: -102%;
+}
+
+.primary-btn:active {
+  transform: scale(0.98);
+}
+
+/* Ensure button inner content stays above the masks */
+.primary-btn > *,
+.ghost-btn > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* ─── Nav link hover — corner bracket animation ─── */
+.nav-link {
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  padding: 4px 6px;
+  transition: color 0.25s ease;
+}
+
+.nav-link::before,
+.nav-link::after {
+  content: "";
+  position: absolute;
+  border: 0px solid transparent;
+  width: 0%;
+  height: 0%;
+  bottom: 0%;
+  right: 0%;
+}
+
+.nav-link::before {
+  border-bottom-width: 1.5px;
+  border-left-width: 1.5px;
+}
+
+.nav-link::after {
+  border-top-width: 1.5px;
+  border-right-width: 1.5px;
+}
+
+.nav-link:hover {
+  color: #0D0D0D !important;
+}
+
+.nav-link:hover::before,
+.nav-link:hover::after {
+  border-color: #3D3830;
+  transition: border-color 0s, width 0.3s, height 0.3s;
+  width: 100%;
+  height: 100%;
+}
+
+.nav-link:hover::before {
+  transition-delay: 0s, 0s, 0.3s;
+}
+
+.nav-link:hover::after {
+  transition-delay: 0s, 0.3s, 0s;
+}
+
+/* ─── Testimonial card ─── */
+.testimonial-card {
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.testimonial-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(0,0,0,0.18) !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.08);
+}
+
+/* ─── Trust badge hover ─── */
+.trust-badge {
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.trust-badge:hover {
+  background: rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.2) !important;
+  transform: translateX(4px);
+}
+
+/* ─── Walkthrough section alternating rows ─── */
+@media (max-width: 768px) {
+  .walkthrough-row { flex-direction: column !important; }
+  .walkthrough-row-reverse { flex-direction: column !important; }
+}
+
+/* ─── Cursor custom ─── */
+.nyaya-cursor { pointer-events: none; position: fixed; z-index: 99999; top: 0; left: 0; }
+
+/* ─── CardSwap perspective container ─── */
+.perspective-\[900px\] {
+  perspective: 900px;
+}
+
+/* ─── Mobile Optimizations ─── */
+@media (max-width: 640px) {
+  .nyaya-h1 { font-size: clamp(32px, 9vw, 52px); }
+  .nyaya-h2 { font-size: clamp(26px, 7vw, 40px); }
+  .nyaya-cta-headline { font-size: clamp(30px, 8vw, 52px); }
+  .nyaya-step-headline { font-size: clamp(24px, 7vw, 36px); }
+}
+
+/* ─── Hide cursor on touch devices ─── */
+@media (hover: none) {
+  .nyaya-cursor { display: none !important; }
+}
