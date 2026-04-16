@@ -1,38 +1,41 @@
 import { motion } from "motion/react";
 import BorderGlow from "./BorderGlow";
 import GradualBlur from "./GradualBlur";
+import { useLanguage } from "../context/LanguageContext";
 
-const testimonials = [
-  {
-    id: 1,
-    quote:
-      "I finally understood my tenant rights when my landlord threatened to throw me out. NyayaBot cited Article 21 and Section 9 of the Transfer of Property Act in under 10 seconds.",
-    name: "Ramesh Verma",
-    designation: "Small Business Owner, Delhi",
-    avatar: "https://images.unsplash.com/photo-1649433658557-54cf58577c68?w=80&h=80&fit=crop&crop=face",
-    initials: "RV",
-  },
-  {
-    id: 2,
-    quote:
-      "As a law student, I use it for constitutional law revision. The citations are always accurate and cross-verified.",
-    name: "Priya Nair",
-    designation: "3rd Year LLB · NLS Bangalore",
-    avatar: "https://images.unsplash.com/photo-1659355894391-a86ee16e10c4?w=80&h=80&fit=crop&crop=face",
-    initials: "PN",
-  },
-  {
-    id: 3,
-    quote:
-      "We integrated NyayaBot into our rural legal aid camp. Villagers could now ask questions in Hindi and get real answers.",
-    name: "Advocate Santosh Kumar",
-    designation: "Bihar State Bar Council",
-    avatar: "https://images.unsplash.com/photo-1578069244640-976a4135fada?w=80&h=80&fit=crop&crop=face",
-    initials: "SK",
-  },
+const avatars = [
+  "https://images.unsplash.com/photo-1649433658557-54cf58577c68?w=80&h=80&fit=crop&crop=face",
+  "https://images.unsplash.com/photo-1659355894391-a86ee16e10c4?w=80&h=80&fit=crop&crop=face",
+  "https://images.unsplash.com/photo-1578069244640-976a4135fada?w=80&h=80&fit=crop&crop=face",
 ];
 
 export function Testimonials() {
+  const { t } = useLanguage();
+
+  const testimonials = [
+    {
+      id: 1,
+      quote: t("test1Quote"),
+      name: t("test1Name"),
+      designation: t("test1Des"),
+      avatar: avatars[0],
+    },
+    {
+      id: 2,
+      quote: t("test2Quote"),
+      name: t("test2Name"),
+      designation: t("test2Des"),
+      avatar: avatars[1],
+    },
+    {
+      id: 3,
+      quote: t("test3Quote"),
+      name: t("test3Name"),
+      designation: t("test3Des"),
+      avatar: avatars[2],
+    },
+  ];
+
   return (
     <section
       style={{
@@ -77,10 +80,10 @@ export function Testimonials() {
               marginBottom: 12,
             }}
           >
-            Voices from Bharatvaasis
+            {t("testimonialsLabel")}
           </span>
           <h2 className="nyaya-h2" style={{ color: "#0D0D0D", margin: 0 }}>
-            What citizens are saying
+            {t("testimonialsHeading")}
           </h2>
         </motion.div>
 
@@ -92,9 +95,9 @@ export function Testimonials() {
             gap: 20,
           }}
         >
-          {testimonials.map((t, i) => (
+          {testimonials.map((item, i) => (
             <motion.div
-              key={t.id}
+              key={item.id}
               initial={{ opacity: 0, y: 32 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -148,7 +151,7 @@ export function Testimonials() {
                     flex: 1,
                   }}
                 >
-                  {t.quote}
+                  {item.quote}
                 </p>
 
                 {/* Divider */}
@@ -163,8 +166,8 @@ export function Testimonials() {
                 {/* Author */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <img
-                    src={t.avatar}
-                    alt={t.name}
+                    src={item.avatar}
+                    alt={item.name}
                     style={{
                       width: 40,
                       height: 40,
@@ -175,10 +178,10 @@ export function Testimonials() {
                   />
                   <div>
                     <div className="dm-sans" style={{ fontSize: 14, fontWeight: 600, color: "#0D0D0D" }}>
-                      {t.name}
+                      {item.name}
                     </div>
                     <div className="dm-sans" style={{ fontSize: 12, color: "#9A9590", marginTop: 2 }}>
-                      {t.designation}
+                      {item.designation}
                     </div>
                   </div>
                 </div>

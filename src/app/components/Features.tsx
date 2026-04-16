@@ -3,6 +3,7 @@ import CardSwap, { Card } from "./CardSwap";
 import { AshokChakra } from "./AshokChakra";
 import BorderGlow from "./BorderGlow";
 import GradualBlur from "./GradualBlur";
+import { useLanguage } from "../context/LanguageContext";
 
 /* ─── Parchment tones for card depth ─── */
 const CARD_COLORS = [
@@ -11,58 +12,40 @@ const CARD_COLORS = [
   { bg: "#E9E4DA", border: "rgba(0,0,0,0.1)" },    // back – deepest parchment
 ];
 
-/* ─── Feature card content ─── */
-const features = [
-  {
-    id: 1,
-    tag: "01",
-    icon: (
-      <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
-        <path d="M14 4C8.5 4 4 8.5 4 14s4.5 10 10 10 10-4.5 10-10S19.5 4 14 4z" stroke="#0D0D0D" strokeWidth="1.8" />
-        <path d="M10 14h8M14 10v8" stroke="#0D0D0D" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M9 9l2 2M19 9l-2 2M9 19l2-2M19 19l-2-2" stroke="#0D0D0D" strokeWidth="1.4" strokeLinecap="round" opacity="0.4" />
-      </svg>
-    ),
-    title: "Ask Any Legal Question",
-    body: "From Article 21 to POCSO — ask anything in plain language and get answers backed by actual constitutional text.",
-    devanagari: "प्रश्न पूछें",
-  },
-  {
-    id: 2,
-    icon: (
-      <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
-        <rect x="4" y="3" width="16" height="22" rx="2" stroke="#0D0D0D" strokeWidth="1.8" />
-        <path d="M8 8h8M8 12h8M8 16h5" stroke="#0D0D0D" strokeWidth="1.6" strokeLinecap="round" />
-        <path d="M18 20l2 2 4-4" stroke="#0D0D0D" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-    tag: "02",
-    title: "Cited, Verifiable Answers",
-    body: "Every response links back to its source — Article number, Amendment, or Landmark Judgment. Zero hallucination policy.",
-    devanagari: "स्रोत सहित",
-  },
-  {
-    id: 3,
-    icon: (
-      <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
-        <circle cx="14" cy="14" r="10" stroke="#0D0D0D" strokeWidth="1.8" />
-        <path d="M4 14h20M14 4c-3 3-5 6-5 10s2 7 5 10M14 4c3 3 5 6 5 10s-2 7-5 10" stroke="#0D0D0D" strokeWidth="1.6" />
-        <circle cx="14" cy="14" r="2.5" fill="#0D0D0D" />
-      </svg>
-    ),
-    tag: "03",
-    title: "Hindi + English Support",
-    body: "Ask in Hindi or English. NyayaBot understands and responds in the language you're most comfortable with.",
-    devanagari: "द्विभाषी",
-  },
+/* ─── Feature card content — icons only (titles/bodies come from translations) ─── */
+const featureIcons = [
+  (
+    <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+      <path d="M14 4C8.5 4 4 8.5 4 14s4.5 10 10 10 10-4.5 10-10S19.5 4 14 4z" stroke="#0D0D0D" strokeWidth="1.8" />
+      <path d="M10 14h8M14 10v8" stroke="#0D0D0D" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M9 9l2 2M19 9l-2 2M9 19l2-2M19 19l-2-2" stroke="#0D0D0D" strokeWidth="1.4" strokeLinecap="round" opacity="0.4" />
+    </svg>
+  ),
+  (
+    <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+      <rect x="4" y="3" width="16" height="22" rx="2" stroke="#0D0D0D" strokeWidth="1.8" />
+      <path d="M8 8h8M8 12h8M8 16h5" stroke="#0D0D0D" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M18 20l2 2 4-4" stroke="#0D0D0D" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  (
+    <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+      <circle cx="14" cy="14" r="10" stroke="#0D0D0D" strokeWidth="1.8" />
+      <path d="M4 14h20M14 4c-3 3-5 6-5 10s2 7 5 10M14 4c3 3 5 6 5 10s-2 7-5 10" stroke="#0D0D0D" strokeWidth="1.6" />
+      <circle cx="14" cy="14" r="2.5" fill="#0D0D0D" />
+    </svg>
+  ),
 ];
+
+const featureDevanagari = ["प्रश्न पूछें", "स्रोत सहित", "द्विभाषी"];
+const featureTags = ["01", "02", "03"];
 
 /* ─── Individual card inner content ─── */
 function FeatureCardContent({
   feature,
   cardColor,
 }: {
-  feature: typeof features[0];
+  feature: { id: number; icon: React.ReactNode; title: string; body: string; devanagari: string; tag: string };
   cardColor: { bg: string; border: string };
 }) {
   return (
@@ -201,6 +184,22 @@ function FeatureCardContent({
 }
 
 export function Features() {
+  const { t } = useLanguage();
+
+  const features = [
+    {
+      id: 1, tag: featureTags[0], icon: featureIcons[0],
+      title: t("feat1Title"), body: t("feat1Body"), devanagari: featureDevanagari[0],
+    },
+    {
+      id: 2, tag: featureTags[1], icon: featureIcons[1],
+      title: t("feat2Title"), body: t("feat2Body"), devanagari: featureDevanagari[1],
+    },
+    {
+      id: 3, tag: featureTags[2], icon: featureIcons[2],
+      title: t("feat3Title"), body: t("feat3Body"), devanagari: featureDevanagari[2],
+    },
+  ];
   return (
     <section
       style={{
@@ -276,15 +275,15 @@ export function Features() {
                 marginBottom: 24,
               }}
             >
-              What NyayaBot Does
+              {t("featuresTag")}
             </span>
           </motion.div>
 
           {/* Headline */}
           <h2 className="nyaya-h2-light" style={{ color: "#0D0D0D", margin: "0 0 20px 0", lineHeight: 1.12 }}>
-            Know the law.
+            {t("featuresH1")}
             <br />
-            <span style={{ color: "#9A9590" }}>Exercise your rights.</span>
+            <span style={{ color: "#9A9590" }}>{t("featuresH2")}</span>
           </h2>
 
           <p
@@ -297,8 +296,7 @@ export function Features() {
               maxWidth: 400,
             }}
           >
-            Three powerful capabilities, one constitutional AI. Swipe through
-            to explore what NyayaBot does for every Indian citizen.
+            {t("featuresSub")}
           </p>
 
           {/* Feature list — concise bullets */}

@@ -1,13 +1,19 @@
-import { useState } from "react";
 import { AshokChakra } from "./AshokChakra";
 import GradualBlur from "./GradualBlur";
 import logoImg from "../../imports/Gemini_Generated_Image_z8chg2z8chg2z8ch.png";
+import { useLanguage } from "../context/LanguageContext";
+import type { TranslationKey } from "../context/LanguageContext";
 
-const footerLinks = {
-  Product: ["How It Works", "Features", "Try Now", "Pricing", "API"],
-  Resources: ["Indian Constitution", "Fundamental Rights", "Legal Glossary", "Blog"],
-  Company: ["About", "Contact", "Privacy Policy", "Terms of Use"],
+type FooterLinkSection = {
+  label: TranslationKey;
+  links: TranslationKey[];
 };
+
+const footerSections: FooterLinkSection[] = [
+  { label: "footerProduct",   links: ["flHowItWorks", "flFeatures", "flTryNow", "flPricing", "flApi"] },
+  { label: "footerResources", links: ["flConstitution", "flRights", "flGlossary", "flBlog"] },
+  { label: "footerCompany",   links: ["flAbout", "flContact", "flPrivacy", "flTerms"] },
+];
 
 function TwitterIcon() {
   return (
@@ -34,7 +40,7 @@ function InstagramIcon() {
 }
 
 export function Footer() {
-  const [lang, setLang] = useState<"en" | "hi">("en");
+  const { lang, setLang, t } = useLanguage();
 
   return (
     <footer
@@ -82,9 +88,9 @@ export function Footer() {
               maxWidth: 200,
             }}
           >
-            Nyaya for all.{" "}
+            {t("footerTagline")}{" "}
             <span className="devanagari-font" style={{ fontSize: 13 }}>
-              न्याय सबके लिए।
+              {t("footerTaglineHi")}
             </span>
           </p>
 
@@ -115,8 +121,8 @@ export function Footer() {
         </div>
 
         {/* Cols 2–4 — Links */}
-        {Object.entries(footerLinks).map(([section, links]) => (
-          <div key={section}>
+        {footerSections.map(({ label, links }) => (
+          <div key={label}>
             <div
               className="dm-sans"
               style={{
@@ -128,11 +134,11 @@ export function Footer() {
                 marginBottom: 18,
               }}
             >
-              {section}
+              {t(label)}
             </div>
             <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 11 }}>
-              {links.map((link) => (
-                <li key={link}>
+              {links.map((linkKey) => (
+                <li key={linkKey}>
                   <a
                     href="#"
                     className="dm-sans"
@@ -145,7 +151,7 @@ export function Footer() {
                     onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.75)")}
                     onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.35)")}
                   >
-                    {link}
+                    {t(linkKey)}
                   </a>
                 </li>
               ))}
@@ -166,7 +172,7 @@ export function Footer() {
               marginBottom: 18,
             }}
           >
-            Language
+            {t("footerLanguage")}
           </div>
           {/* Toggle pill */}
           <div
@@ -210,9 +216,7 @@ export function Footer() {
               lineHeight: 1.6,
             }}
           >
-            {lang === "en"
-              ? "Available in English & Hindi"
-              : "हिंदी और अंग्रेज़ी में उपलब्ध"}
+            {t("footerLangAvail")}
           </p>
         </div>
       </div>

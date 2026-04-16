@@ -1,11 +1,20 @@
 import { useState, useEffect } from "react";
 import logoImg from "../../imports/Gemini_Generated_Image_z8chg2z8chg2z8ch.png";
+import { useLanguage } from "../context/LanguageContext";
+import type { TranslationKey } from "../context/LanguageContext";
 
-const navLinks = ["Home", "How It Works", "Features", "About", "Blog"];
+const navLinkKeys: TranslationKey[] = [
+  "navHome",
+  "navHowItWorks",
+  "navFeatures",
+  "navAbout",
+  "navBlog",
+];
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -73,9 +82,9 @@ export function Navbar() {
           style={{ gap: 28, alignItems: "center" }}
           className="hidden md:flex"
         >
-          {navLinks.map((link) => (
+          {navLinkKeys.map((key) => (
             <a
-              key={link}
+              key={key}
               href="#"
               className="nav-link dm-sans"
               style={{
@@ -85,7 +94,7 @@ export function Navbar() {
                 textDecoration: "none",
               }}
             >
-              {link}
+              {t(key)}
             </a>
           ))}
         </div>
@@ -108,7 +117,7 @@ export function Navbar() {
             }}
           >
             <span className="text-container">
-              <span className="text">Log In</span>
+              <span className="text">{t("navLogin")}</span>
             </span>
           </a>
           <a
@@ -130,7 +139,7 @@ export function Navbar() {
             }}
           >
             <span className="text-container">
-              <span className="text">Try NyayaBot Free →</span>
+              <span className="text">{t("navTryFree")}</span>
             </span>
           </a>
 
@@ -176,9 +185,9 @@ export function Navbar() {
             boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
           }}
         >
-          {navLinks.map((link) => (
+          {navLinkKeys.map((key) => (
             <a
-              key={link}
+              key={key}
               href="#"
               className="dm-sans"
               style={{
@@ -190,7 +199,7 @@ export function Navbar() {
                 borderBottom: "1px solid rgba(0,0,0,0.05)",
               }}
             >
-              {link}
+              {t(key)}
             </a>
           ))}
           <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
@@ -209,7 +218,7 @@ export function Navbar() {
                 textAlign: "center",
               }}
             >
-              Log In
+              {t("navLogin")}
             </a>
             <a
               href="#"
@@ -226,7 +235,7 @@ export function Navbar() {
                 textAlign: "center",
               }}
             >
-              Try Free →
+              {t("navTryFreeMobile")}
             </a>
           </div>
         </div>

@@ -7,6 +7,7 @@ import GradualBlur from "./GradualBlur";
 import BlurText from "./BlurText";
 import DarkVeil from "./DarkVeil";
 import logoImg from "../../imports/Gemini_Generated_Image_z8chg2z8chg2z8ch.png";
+import { useLanguage } from "../context/LanguageContext";
 
 const avatar1 = "https://images.unsplash.com/photo-1649433658557-54cf58577c68?w=80&h=80&fit=crop&crop=face";
 const avatar2 = "https://images.unsplash.com/photo-1659355894391-a86ee16e10c4?w=80&h=80&fit=crop&crop=face";
@@ -24,7 +25,7 @@ const lineVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] } },
 };
 
-function ChatMockup() {
+function ChatMockup({ t }: { t: (k: string) => string }) {
   return (
     <BorderGlow
       backgroundColor="#FAFAF8"
@@ -69,10 +70,10 @@ function ChatMockup() {
           </div>
           <div>
             <div className="dm-sans" style={{ fontSize: 13, fontWeight: 600, color: "#0D0D0D" }}>
-              NyayaBot
+              {t("heroChatHeader")}
             </div>
             <div className="dm-sans" style={{ fontSize: 11, color: "#7A7570", display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ color: "#3A7D44", fontSize: 8 }}>●</span> Online
+              <span style={{ color: "#3A7D44", fontSize: 8 }}>●</span> {t("heroChatOnline")}
             </div>
           </div>
         </div>
@@ -98,7 +99,7 @@ function ChatMockup() {
               lineHeight: 1.55,
             }}
           >
-            क्या मेरे पास निःशुल्क कानूनी सहायता का अधिकार है?
+            {t("heroChatUserMsg")}
           </div>
           <span
             className="dm-sans"
@@ -110,7 +111,7 @@ function ChatMockup() {
               padding: "2px 6px",
             }}
           >
-            Do I have a right to free legal aid?
+            {t("heroChatUserMsgSub")}
           </span>
         </div>
 
@@ -148,9 +149,7 @@ function ChatMockup() {
                 marginBottom: 8,
               }}
             >
-              Yes. Under <strong style={{ textDecoration: "underline" }}>Article 39A</strong> of the Indian Constitution,
-              the State shall provide free legal aid to ensure equal
-              justice is not denied due to economic disability...
+              {t("heroChatBotReply")}
             </div>
             {/* Source badge */}
             <div
@@ -170,7 +169,7 @@ function ChatMockup() {
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                 <path d="M1 2h8M1 5h5M1 8h7" stroke="#0D0D0D" strokeWidth="1.2" strokeLinecap="round"/>
               </svg>
-              Article 39A — Directive Principles
+              {t("heroChatSource")}
             </div>
           </div>
         </div>
@@ -178,7 +177,7 @@ function ChatMockup() {
         {/* Typing indicator */}
         <div style={{ display: "flex", gap: 8, alignItems: "center", paddingLeft: 36 }}>
           <div className="dm-sans" style={{ fontSize: 11, color: "#9A9590", fontStyle: "italic" }}>
-            NyayaBot is typing
+            {t("heroChatTyping")}
           </div>
           <div style={{ display: "flex", gap: 3 }}>
             {[0, 1, 2].map((i) => (
@@ -221,7 +220,7 @@ function ChatMockup() {
             color: "#9A9590",
           }}
         >
-          Ask about your rights...
+          {t("heroChatPlaceholder")}
         </div>
         <div
           style={{
@@ -246,6 +245,7 @@ function ChatMockup() {
 
 export function Hero() {
   const heroRef = useRef<HTMLElement | null>(null);
+  const { t } = useLanguage();
 
   return (
     <section
@@ -373,7 +373,7 @@ export function Hero() {
                 marginBottom: 26,
               }}
             >
-              🇮🇳&nbsp; Powered by the Indian Constitution
+              {t("heroEyebrow")}
             </span>
           </motion.div>
 
@@ -388,7 +388,7 @@ export function Hero() {
                 fontFamily: '"Cormorant Garamond", "Cormorant", serif',
               }}
             >
-              Every Indian Deserves
+              {t("heroHeadline1")}
             </h1>
           </motion.div>
           <motion.div variants={lineVariants} style={{ marginBottom: 26 }}>
@@ -401,7 +401,7 @@ export function Hero() {
                   fontFamily: '"Cormorant Garamond", "Cormorant", serif',
                 }}
               >
-                To Know Their Rights.
+                {t("heroHeadline2")}
               </h1>
             </span>
           </motion.div>
@@ -419,9 +419,7 @@ export function Hero() {
               maxWidth: 500,
             }}
           >
-            Ask NyayaBot any question about the Indian Constitution,
-            Fundamental Rights, or legal provisions — and get clear,
-            cited answers in seconds.
+            {t("heroSub")}
           </motion.p>
 
           {/* CTA Group */}
@@ -449,7 +447,7 @@ export function Hero() {
               }}
             >
               <span className="text-container">
-                <span className="text">Start Asking Now →</span>
+                <span className="text">{t("heroCta1")}</span>
               </span>
             </a>
             <a
@@ -472,7 +470,7 @@ export function Hero() {
               <span className="text-container">
                 <span className="text" style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <PlayCircle size={17} color="currentColor" />
-                  Watch How It Works
+                  {t("heroCta2")}
                 </span>
               </span>
             </a>
@@ -504,12 +502,12 @@ export function Hero() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <span className="dm-sans" style={{ fontSize: 13, fontWeight: 500, color: "#0D0D0D" }}>
-                2,40,000+ queries answered
+                {t("heroSocialQueries")}
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <span style={{ color: "#0D0D0D", fontSize: 13 }}>★★★★★</span>
                 <span className="dm-sans" style={{ fontSize: 12, color: "#9A9590" }}>
-                  4.9 rating
+                  {t("heroSocialRating")}
                 </span>
               </div>
             </div>
@@ -529,7 +527,7 @@ export function Hero() {
           }}
         >
           <div className="chat-float" style={{ width: "100%", maxWidth: 440 }}>
-            <ChatMockup />
+            <ChatMockup t={t} />
           </div>
         </motion.div>
       </div>

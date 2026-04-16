@@ -1,4 +1,5 @@
 import { ScrollVelocity } from "./ScrollVelocity";
+import { useLanguage } from "../context/LanguageContext";
 
 // ── Separator dot ──────────────────────────────────────────────────────────
 
@@ -81,6 +82,7 @@ function Row({ names }: { names: string[] }) {
 // ── Section ────────────────────────────────────────────────────────────────
 
 export function TrustStrip() {
+  const { t } = useLanguage();
   return (
     <section
       style={{
@@ -104,7 +106,7 @@ export function TrustStrip() {
             textTransform: "uppercase",
           }}
         >
-          Trusted by students, lawyers &amp; citizens across India
+          {t("trustStrip")}
         </span>
       </div>
 

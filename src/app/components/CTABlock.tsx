@@ -4,10 +4,11 @@ import BorderGlow from "./BorderGlow";
 import GradualBlur from "./GradualBlur";
 import PixelTransition from "./PixelTransition";
 import TrueFocus from "./TrueFocus";
+import { useLanguage } from "../context/LanguageContext";
 
 // ── Shared button inner layouts ─────────────────────────────────────────────
 
-const PrimaryFirst = () => (
+const PrimaryFirst = ({ text }: { text: string }) => (
   <div style={{
     position: "absolute", inset: 0,
     display: "flex", alignItems: "center", justifyContent: "center",
@@ -15,12 +16,12 @@ const PrimaryFirst = () => (
     boxShadow: "0 4px 24px rgba(255,255,255,0.15)",
   }}>
     <span className="dm-sans" style={{ fontWeight: 700, fontSize: 15, color: "#0D0D0D", whiteSpace: "nowrap" }}>
-      Ask Your First Question →
+      {text}
     </span>
   </div>
 );
 
-const PrimarySecond = () => (
+const PrimarySecond = ({ text }: { text: string }) => (
   <div style={{
     position: "absolute", inset: 0,
     display: "flex", alignItems: "center", justifyContent: "center",
@@ -28,12 +29,12 @@ const PrimarySecond = () => (
     border: "1.5px solid rgba(255,255,255,0.3)",
   }}>
     <span className="dm-sans" style={{ fontWeight: 700, fontSize: 15, color: "#FFFFFF", whiteSpace: "nowrap" }}>
-      Access Your Rights →
+      {text}
     </span>
   </div>
 );
 
-const DemoFirst = () => (
+const DemoFirst = ({ text }: { text: string }) => (
   <div style={{
     position: "absolute", inset: 0,
     display: "flex", alignItems: "center", justifyContent: "center",
@@ -41,12 +42,12 @@ const DemoFirst = () => (
     border: "1px solid rgba(255,255,255,0.22)",
   }}>
     <span className="dm-sans" style={{ fontWeight: 600, fontSize: 15, color: "#FFFFFF", whiteSpace: "nowrap" }}>
-      See Demo
+      {text}
     </span>
   </div>
 );
 
-const DemoSecond = () => (
+const DemoSecond = ({ text }: { text: string }) => (
   <div style={{
     position: "absolute", inset: 0,
     display: "flex", alignItems: "center", justifyContent: "center",
@@ -54,7 +55,7 @@ const DemoSecond = () => (
     border: "1px solid rgba(255,255,255,0.5)",
   }}>
     <span className="dm-sans" style={{ fontWeight: 600, fontSize: 15, color: "#FFFFFF", whiteSpace: "nowrap" }}>
-      ▶ Watch 2-min tour
+      {text}
     </span>
   </div>
 );
@@ -62,6 +63,7 @@ const DemoSecond = () => (
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function CTABlock() {
+  const { t } = useLanguage();
   return (
     <section
       style={{
@@ -157,7 +159,7 @@ export function CTABlock() {
                 marginBottom: 28,
               }}
             >
-              For every citizen. For free.
+              {t("ctaOverline")}
             </span>
           </motion.div>
 
@@ -170,7 +172,7 @@ export function CTABlock() {
             style={{ marginBottom: 28 }}
           >
             <TrueFocus
-              sentence="Know the law.|Exercise your rights."
+              sentence={t("ctaHeadline")}
               separator="|"
               blurAmount={5}
               borderColor="rgba(255,255,255,0.6)"
@@ -206,7 +208,7 @@ export function CTABlock() {
               marginBottom: 44,
             }}
           >
-            Start asking NyayaBot — no signup needed to try.
+            {t("ctaSub")}
           </motion.p>
 
           {/* CTAs */}
@@ -219,8 +221,8 @@ export function CTABlock() {
           >
             {/* Primary CTA */}
             <PixelTransition
-              firstContent={<PrimaryFirst />}
-              secondContent={<PrimarySecond />}
+              firstContent={<PrimaryFirst text={t("ctaP1")} />}
+              secondContent={<PrimarySecond text={t("ctaP2")} />}
               gridSize={9}
               pixelColor="#0D0D0D"
               animationStepDuration={0.25}
@@ -233,8 +235,8 @@ export function CTABlock() {
 
             {/* Ghost CTA */}
             <PixelTransition
-              firstContent={<DemoFirst />}
-              secondContent={<DemoSecond />}
+              firstContent={<DemoFirst text={t("ctaD1")} />}
+              secondContent={<DemoSecond text={t("ctaD2")} />}
               gridSize={9}
               pixelColor="rgba(255,255,255,0.75)"
               animationStepDuration={0.25}
@@ -261,9 +263,9 @@ export function CTABlock() {
               margin: "0 auto",
             }}
           >
-            NyayaBot is an informational tool. It does not constitute legal advice.
+            {t("ctaDisc1")}
             <br />
-            For legal matters, always consult a qualified advocate.
+            {t("ctaDisc2")}
           </motion.p>
         </BorderGlow>
       </div>

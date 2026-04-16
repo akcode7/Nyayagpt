@@ -3,8 +3,9 @@ import { AshokChakra } from "./AshokChakra";
 import GradualBlur from "./GradualBlur";
 import PixelBlast from "./PixelBlast";
 import logoImg from "../../imports/Gemini_Generated_Image_z8chg2z8chg2z8ch.png";
+import { useLanguage } from "../context/LanguageContext";
 
-function ChatWindowMockup() {
+function ChatWindowMockup({ t }: { t: (k: string) => string }) {
   return (
     <div
       style={{
@@ -44,10 +45,10 @@ function ChatWindowMockup() {
         </div>
         <div>
           <div className="dm-sans" style={{ fontSize: 12, fontWeight: 600, color: "#0D0D0D" }}>
-            NyayaBot
+            {t("walkCitHeader")}
           </div>
           <div className="dm-sans" style={{ fontSize: 10, color: "#9A9590", display: "flex", alignItems: "center", gap: 3 }}>
-            <span style={{ color: "#3A7D44", fontSize: 7 }}>●</span> Online
+            <span style={{ color: "#3A7D44", fontSize: 7 }}>●</span> {t("walkCitOnline")}
           </div>
         </div>
       </div>
@@ -67,7 +68,7 @@ function ChatWindowMockup() {
             maxWidth: "80%",
           }}
         >
-          If my employer doesn't pay salary, what can I do?
+          {t("walkChatUserMsg")}
         </div>
         <div
           className="dm-sans"
@@ -82,7 +83,7 @@ function ChatWindowMockup() {
             maxWidth: "85%",
           }}
         >
-          Under <strong style={{ textDecoration: "underline" }}>Article 23</strong> (prohibition of forced labour) and the Payment of Wages Act, 1936, your employer is legally bound to pay wages on time...
+          {t("walkChatBotReply")}
         </div>
         <div
           style={{
@@ -99,7 +100,7 @@ function ChatWindowMockup() {
           }}
           className="dm-sans"
         >
-          📜 Article 23 · Payment of Wages Act, 1936
+          {t("walkChatCitation")}
         </div>
       </div>
 
@@ -126,7 +127,7 @@ function ChatWindowMockup() {
             color: "#9A9590",
           }}
         >
-          Ask about your rights...
+          {t("walkChatPlaceholder")}
         </div>
         <div
           style={{
@@ -148,7 +149,7 @@ function ChatWindowMockup() {
   );
 }
 
-function CitationMockup() {
+function CitationMockup({ t }: { t: (k: string) => string }) {
   return (
     <div
       style={{
@@ -195,24 +196,11 @@ function CitationMockup() {
             <img src={logoImg} alt="NyayaBot" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
           </div>
           <span className="dm-sans" style={{ fontSize: 12, fontWeight: 600, color: "#0D0D0D" }}>
-            NyayaBot
+            {t("walkCitHeader")}
           </span>
         </div>
         <p className="dm-sans" style={{ fontSize: 13, lineHeight: 1.7, color: "#0D0D0D", margin: 0 }}>
-          The Right to Education under{" "}
-          <span
-            style={{
-              color: "#0D0D0D",
-              background: "rgba(0,0,0,0.07)",
-              padding: "1px 5px",
-              borderRadius: 3,
-              cursor: "pointer",
-              fontWeight: 600,
-            }}
-          >
-            Article 21A
-          </span>{" "}
-          guarantees free and compulsory education for children aged 6–14 years...
+          {t("walkCitBody")}
         </p>
         <div style={{ marginTop: 12, display: "flex", gap: 6, flexWrap: "wrap" }}>
           {["Article 21A", "RTE Act 2009", "86th Amendment"].map((tag) => (
@@ -250,7 +238,7 @@ function CitationMockup() {
         }}
       >
         <div className="dm-sans" style={{ fontSize: 10, fontWeight: 600, color: "#7A7570", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-          Sources
+          {t("walkCitSources")}
         </div>
         {[
           { label: "Article 21A", sub: "Constitution of India" },
@@ -279,24 +267,26 @@ function CitationMockup() {
   );
 }
 
-const steps = [
-  {
-    step: "Step 01",
-    headline: "Ask in plain language.",
-    body: "No legal jargon needed. Type your situation the way you'd explain it to a friend. NyayaBot understands context.",
-    visual: <ChatWindowMockup />,
-    reverse: false,
-  },
-  {
-    step: "Step 02",
-    headline: "Get answers with sources.",
-    body: "NyayaBot cites the exact Article, Amendment, or Court ruling behind every answer. Click any citation to read the original text.",
-    visual: <CitationMockup />,
-    reverse: true,
-  },
-];
-
 export function Walkthrough() {
+  const { t } = useLanguage();
+
+  const steps = [
+    {
+      step: t("walk1Step"),
+      headline: t("walk1Headline"),
+      body: t("walk1Body"),
+      visual: <ChatWindowMockup t={t} />,
+      reverse: false,
+    },
+    {
+      step: t("walk2Step"),
+      headline: t("walk2Headline"),
+      body: t("walk2Body"),
+      visual: <CitationMockup t={t} />,
+      reverse: true,
+    },
+  ];
+
   return (
     <section
       style={{
