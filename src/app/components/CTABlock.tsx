@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { Link } from "react-router";
 import { AshokChakra } from "./AshokChakra";
 import BorderGlow from "./BorderGlow";
 import GradualBlur from "./GradualBlur";
@@ -220,18 +221,20 @@ export function CTABlock() {
             style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 28 }}
           >
             {/* Primary CTA */}
-            <PixelTransition
-              firstContent={<PrimaryFirst text={t("ctaP1")} />}
-              secondContent={<PrimarySecond text={t("ctaP2")} />}
-              gridSize={9}
-              pixelColor="#0D0D0D"
-              animationStepDuration={0.25}
-              aspectRatio="20%"
-              style={{
-                width: 270,
-                borderRadius: 9999,
-              }}
-            />
+            <Link to="/ask" style={{ textDecoration: 'none' }}>
+              <PixelTransition
+                firstContent={<PrimaryFirst text={t("ctaP1")} />}
+                secondContent={<PrimarySecond text={t("ctaP2")} />}
+                gridSize={9}
+                pixelColor="#0D0D0D"
+                animationStepDuration={0.25}
+                aspectRatio="20%"
+                style={{
+                  width: 270,
+                  borderRadius: 9999,
+                }}
+              />
+            </Link>
 
             {/* Ghost CTA */}
             <PixelTransition

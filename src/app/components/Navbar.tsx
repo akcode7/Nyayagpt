@@ -130,7 +130,7 @@ export function Navbar() {
             </span>
           </Link>
           <Link
-            to="/how-it-works"
+            to="/ask"
             className="primary-btn dm-sans cta-glow"
             style={{
               fontSize: 14,
@@ -232,7 +232,7 @@ export function Navbar() {
               {t("navLogin")}
             </Link>
             <Link
-              to="/how-it-works"
+              to="/ask"
               onClick={() => setMobileOpen(false)}
               className="dm-sans"
               style={{
