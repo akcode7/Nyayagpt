@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { Link } from "react-router";
 import { useRef } from "react";
 import { Mic, Send, Minus, Maximize2, PlayCircle } from "lucide-react";
 import { AshokChakra } from "./AshokChakra";
@@ -427,8 +428,8 @@ export function Hero() {
             variants={lineVariants}
             style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 44 }}
           >
-            <a
-              href="#"
+            <Link
+              to="/ask"
               className="primary-btn cta-glow dm-sans"
               style={{
                 display: "inline-flex",
@@ -449,7 +450,7 @@ export function Hero() {
               <span className="text-container">
                 <span className="text">{t("heroCta1")}</span>
               </span>
-            </a>
+            </Link>
             <a
               href="#"
               className="ghost-btn dm-sans"

@@ -1,272 +1,577 @@
-import React, { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
+import logoImg from "../../imports/new_logo.png";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface Message {
+  id: number;
+  role: "user" | "assistant";
+  content: string;
+  time: string;
+}
+
+// ─── Sample suggestions shown on empty state ─────────────────────────────────
+const suggestions = [
+  "What is Article 21 of the Indian Constitution?",
+  "Explain the concept of Fundamental Rights vs Directive Principles",
+  "Help me understand the Right to Information Act",
+  "What are the grounds for filing a PIL in India?",
+];
+
+// ─── Helper ───────────────────────────────────────────────────────────────────
+function getTime() {
+  const d = new Date();
+  const h = d.getHours();
+  const m = d.getMinutes();
+  const ampm = h >= 12 ? "PM" : "AM";
+  return `${h % 12 || 12}:${m < 10 ? "0" + m : m} ${ampm}`;
+}
+
+// ─── Chat Message Bubble ──────────────────────────────────────────────────────
+function UserBubble({ message }: { message: Message }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, animation: "fadeSlideUp 0.3s ease" }}>
+      <div style={{
+        background: "#1e1e1e",
+        border: "1px solid rgba(197,160,89,0.15)",
+        borderRadius: "18px 18px 4px 18px",
+        padding: "14px 20px",
+        maxWidth: "72%",
+        fontSize: 15,
+        lineHeight: 1.65,
+        color: "#e8e4de",
+        fontFamily: "'DM Sans', sans-serif",
+      }}>
+        {message.content}
+      </div>
+      <span style={{ fontSize: 11, color: "rgba(200,195,188,0.45)", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.04em" }}>
+        {message.time}
+      </span>
+    </div>
+  );
+}
+
+function BotBubble({ message }: { message: Message }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10, animation: "fadeSlideUp 0.3s ease" }}>
+      {/* Bot label */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{
+          width: 26, height: 26,
+          background: "rgba(197,160,89,0.15)",
+          border: "1px solid rgba(197,160,89,0.3)",
+          borderRadius: 6,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          overflow: "hidden", padding: 3,
+        }}>
+          <img src={logoImg} alt="NyayaBot" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", color: "#C5A059", fontFamily: "'DM Sans', sans-serif", textTransform: "uppercase" }}>
+          NyayaBot
+        </span>
+      </div>
+      {/* Bubble */}
+      <div style={{
+        background: "#111111",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: "4px 18px 18px 18px",
+        padding: "16px 22px",
+        maxWidth: "80%",
+        fontSize: 15,
+        lineHeight: 1.75,
+        color: "#d8d4ce",
+        fontFamily: "'DM Sans', sans-serif",
+        whiteSpace: "pre-wrap",
+      }}>
+        {message.content}
+      </div>
+      {/* Action row */}
+      <div style={{ display: "flex", gap: 20, paddingLeft: 4 }}>
+        {[["content_copy", "Copy"], ["share", "Share"]].map(([icon, label]) => (
+          <button key={icon} style={{
+            display: "flex", alignItems: "center", gap: 5,
+            background: "none", border: "none", cursor: "pointer",
+            fontSize: 10.5, letterSpacing: "0.1em", textTransform: "uppercase",
+            color: "rgba(197,160,89,0.55)", fontFamily: "'DM Sans', sans-serif",
+            transition: "color 0.2s",
+            fontWeight: 600,
+          }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#C5A059")}
+            onMouseLeave={e => (e.currentTarget.style.color = "rgba(197,160,89,0.55)")}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{icon}</span>
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export const Chat = () => {
-  const [messages, setMessages] = useState([
-    {
-      type: "assistant",
-      content: "Constitutional Intelligence Portal",
-      subcontent: "Synthesizing precedents from the Supreme Court of India. You are currently inquiring about fundamental rights and state directives.",
-      isWelcome: true,
-    },
-    {
-      type: "user",
-      content: "Can you explain the symbiotic relationship between Article 21 and the Directive Principles of State Policy, specifically regarding the right to a clean environment?",
-      time: "14:02 PM",
-    },
-    {
-      type: "assistant",
-      content: "The relationship you're inquiring about is one of the most dynamic evolutions in Indian Jurisprudence. While Directive Principles (Part IV) were originally non-justiciable, the Supreme Court has read them into the Fundamental Rights (Part III) via Article 21.",
-      citations: [
-        {
-          title: "M.C. Mehta v. Union of India",
-          desc: "The bedrock of environmental litigation, establishing that the right to live includes the right to enjoy a pollution-free environment."
-        },
-        {
-          title: "Article 48A & 51A(g)",
-          desc: "These constitutional mandates provide the textual anchor for the State and Citizens to protect the natural environment."
-        }
-      ],
-      closing: "Essentially, the Court has transformed the State's \"duty\" under Directive Principles into the citizen's \"right\" under Article 21. This creates a \"Right to Environment\" that is fundamental and enforceable."
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSend = () => {
-    if (!inputText.trim()) return;
-    const now = new Date();
-    setMessages([
-      ...messages,
-      { type: "user", content: inputText.trim(), time: `${now.getHours()}:${now.getMinutes() < 10 ? "0" : ""}${now.getMinutes()}` }
-    ]);
+  const isEmpty = messages.length === 0;
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
+
+  // Auto-resize textarea
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputText(e.target.value);
+    e.target.style.height = "auto";
+    e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
+  };
+
+  const sendMessage = (text?: string) => {
+    const content = (text ?? inputText).trim();
+    if (!content || isLoading) return;
+
+    const userMsg: Message = { id: Date.now(), role: "user", content, time: getTime() };
+    setMessages(prev => [...prev, userMsg]);
     setInputText("");
-    // Here we'd call an AI backend!
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+    setIsLoading(true);
+
+    // Simulate AI response
+    setTimeout(() => {
+      const botMsg: Message = {
+        id: Date.now() + 1,
+        role: "assistant",
+        content: `Thank you for your inquiry regarding "${content.slice(0, 60)}${content.length > 60 ? '...' : ''}". \n\nAs per Indian constitutional jurisprudence, this is a nuanced area of law. The Supreme Court of India has consistently held that constitutional provisions must be interpreted in light of the founding principles and evolving societal needs.\n\nFor a comprehensive legal opinion on your specific situation, I recommend consulting with a qualified advocate. I can provide general legal information and direct you to relevant statutes and precedents.`,
+        time: getTime(),
+      };
+      setMessages(prev => [...prev, botMsg]);
+      setIsLoading(false);
+    }, 1800);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      sendMessage();
     }
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0e0e0e] text-[#e5e2e1] dm-sans dark" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      {/* SideNavBar */}
-      <aside className="hidden md:flex flex-col h-full w-72 left-0 top-0 fixed bg-[#0e0e0e] border-r border-[#4e4639]/30 z-50">
-        <div className="p-8">
-          <div className="flex items-center gap-3 mb-10">
-            <Link to="/">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#e9c176] to-[#c5a059] flex items-center justify-center rounded-sm transition-transform hover:scale-105 cursor-pointer">
-                <span className="material-symbols-outlined text-[#412d00] text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>balance</span>
-              </div>
-            </Link>
-            <div>
-              <h1 className="nyaya-h3 text-[#e9c176] tracking-tighter" style={{ fontSize: "24px" }}>NyayaBot</h1>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-[#d1c5b4] opacity-70">Digital Magistrate</p>
+    <div style={{
+      display: "flex",
+      height: "100vh",
+      background: "#0D0D0D",
+      color: "#e8e4de",
+      fontFamily: "'DM Sans', sans-serif",
+      overflow: "hidden",
+    }}>
+      {/* ── KEYFRAMES ── */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 1; }
+        }
+        @keyframes typing {
+          0%, 80%, 100% { transform: scale(0.8); opacity: 0.4; }
+          40% { transform: scale(1.1); opacity: 1; }
+        }
+        .chat-sidebar-link {
+          display: flex; align-items: center; gap: 12px;
+          padding: 10px 16px; border-radius: 10px; cursor: pointer;
+          transition: all 0.2s; border: none; background: none;
+          width: 100%; text-align: left; color: rgba(201,195,185,0.65);
+          font-size: 13.5px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+          letter-spacing: 0.01em;
+        }
+        .chat-sidebar-link:hover { background: rgba(197,160,89,0.08); color: #C5A059; }
+        .chat-sidebar-link.active { background: rgba(197,160,89,0.1); color: #C5A059; border-left: 2px solid #C5A059; border-radius: 0 10px 10px 0; }
+        .chat-send-btn { transition: all 0.2s ease; }
+        .chat-send-btn:hover:not(:disabled) { transform: scale(1.05); }
+        .chat-send-btn:active:not(:disabled) { transform: scale(0.95); }
+        .suggestion-chip:hover { background: rgba(197,160,89,0.12) !important; border-color: rgba(197,160,89,0.4) !important; color: #C5A059 !important; }
+        .icon-btn:hover { color: #C5A059 !important; background: rgba(197,160,89,0.1) !important; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 40; }
+        @media (max-width: 768px) {
+          .sidebar-overlay.open { display: block; }
+        }
+      `}</style>
+
+      {/* ─── SIDEBAR ──────────────────────────────────────────────────── */}
+      {/* Mobile overlay */}
+      <div
+        className={`sidebar-overlay ${sidebarOpen ? "open" : ""}`}
+        onClick={() => setSidebarOpen(false)}
+      />
+
+      <aside style={{
+        width: 268,
+        flexShrink: 0,
+        background: "#0a0a0a",
+        borderRight: "1px solid rgba(255,255,255,0.06)",
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        position: "fixed",
+        left: sidebarOpen ? 0 : "auto",
+        zIndex: 50,
+        transition: "transform 0.3s ease",
+        transform: sidebarOpen ? "translateX(0)" : undefined,
+      }}
+        className="chat-sidebar"
+      >
+        {/* Logo */}
+        <div style={{ padding: "28px 22px 20px" }}>
+          <Link to="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{
+              width: 38, height: 38, background: "linear-gradient(135deg, #C5A059, #8B6F3A)",
+              borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center",
+              overflow: "hidden", padding: 4,
+            }}>
+              <img src={logoImg} alt="NyayaBot" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
             </div>
-          </div>
-          
-          <nav className="space-y-4">
-            <button className="w-full flex items-center gap-4 py-3 px-4 bg-[#131313] text-[#e9c176] border-l-2 border-[#C5A059] transition-all rounded-r-md">
-              <span className="material-symbols-outlined">add_notes</span>
-              <span className="text-sm font-medium tracking-wide">New Inquiry</span>
-            </button>
-            <button className="w-full flex items-center gap-4 py-3 text-[#d1c5b4] opacity-70 pl-4 hover:bg-[#131313] hover:text-[#e9c176] transition-all rounded-md">
-              <span className="material-symbols-outlined">history</span>
-              <span className="text-sm font-medium tracking-wide">Precedents</span>
-            </button>
-            <button className="w-full flex items-center gap-4 py-3 text-[#d1c5b4] opacity-70 pl-4 hover:bg-[#131313] hover:text-[#e9c176] transition-all rounded-md">
-              <span className="material-symbols-outlined">balance</span>
-              <span className="text-sm font-medium tracking-wide">Jurisdiction</span>
-            </button>
-            <button className="w-full flex items-center gap-4 py-3 text-[#d1c5b4] opacity-70 pl-4 hover:bg-[#131313] hover:text-[#e9c176] transition-all rounded-md">
-              <span className="material-symbols-outlined">folder_special</span>
-              <span className="text-sm font-medium tracking-wide">Archives</span>
-            </button>
-          </nav>
-          
-          <div className="mt-12">
-            <p className="text-[10px] uppercase tracking-widest text-[#9a8f80] mb-5 opacity-70">Recent Researches</p>
-            <ul className="space-y-4">
-              <li className="group cursor-pointer">
-                <p className="text-xs text-[#d1c5b4] group-hover:text-[#e9c176] transition-colors truncate">Article 21 Interpretation</p>
-              </li>
-              <li className="group cursor-pointer">
-                <p className="text-xs text-[#d1c5b4] group-hover:text-[#e9c176] transition-colors truncate">Directive Principles</p>
-              </li>
-              <li className="group cursor-pointer">
-                <p className="text-xs text-[#d1c5b4] group-hover:text-[#e9c176] transition-colors truncate">Writ Jurisdiction Analysis</p>
-              </li>
-            </ul>
-          </div>
+            <div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: "#C5A059", letterSpacing: "-0.02em", fontFamily: "'Cormorant Garamond', serif" }}>
+                NyayaBot
+              </div>
+              <div style={{ fontSize: 9, letterSpacing: "0.2em", color: "rgba(201,195,185,0.5)", textTransform: "uppercase" }}>
+                Digital Magistrate
+              </div>
+            </div>
+          </Link>
         </div>
-        
-        <div className="mt-auto p-8 space-y-2">
-          <button className="w-full flex items-center gap-4 py-2 text-[#d1c5b4] opacity-70 pl-4 hover:text-[#e9c176] transition-all rounded-md">
-            <span className="material-symbols-outlined text-xl">settings</span>
-            <span className="text-sm font-medium tracking-wide">Settings</span>
+
+        {/* New Inquiry */}
+        <div style={{ padding: "0 14px 16px" }}>
+          <button
+            onClick={() => setMessages([])}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 10,
+              padding: "11px 16px", borderRadius: 10, cursor: "pointer",
+              background: "rgba(197,160,89,0.12)", border: "1px solid rgba(197,160,89,0.2)",
+              color: "#C5A059", fontSize: 13.5, fontWeight: 600, fontFamily: "'DM Sans', sans-serif",
+              letterSpacing: "0.01em", transition: "all 0.2s",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = "rgba(197,160,89,0.2)")}
+            onMouseLeave={e => (e.currentTarget.style.background = "rgba(197,160,89,0.12)")}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add</span>
+            New Inquiry
           </button>
-          <button className="w-full flex items-center gap-4 py-2 text-[#d1c5b4] opacity-70 pl-4 hover:text-[#e9c176] transition-all rounded-md">
-            <span className="material-symbols-outlined text-xl">help_center</span>
-            <span className="text-sm font-medium tracking-wide">Support</span>
-          </button>
+        </div>
+
+        {/* Navigation */}
+        <nav style={{ padding: "0 8px", flex: 1, overflowY: "auto" }}>
+          <div style={{ marginBottom: 6 }}>
+            {[
+              { icon: "history", label: "Precedents" },
+              { icon: "balance", label: "Jurisdiction" },
+              { icon: "folder_special", label: "Archives" },
+            ].map(({ icon, label }) => (
+              <button key={label} className="chat-sidebar-link">
+                <span className="material-symbols-outlined" style={{ fontSize: 19 }}>{icon}</span>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Recent */}
+          <div style={{ marginTop: 24, paddingLeft: 8 }}>
+            <p style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(201,195,185,0.3)", marginBottom: 10, fontWeight: 700 }}>
+              Recent
+            </p>
+            {["Article 21 Interpretation", "Directive Principles", "Writ Jurisdiction"].map(item => (
+              <div key={item} style={{
+                padding: "8px 10px", fontSize: 12.5, color: "rgba(201,195,185,0.55)",
+                cursor: "pointer", borderRadius: 7, transition: "all 0.2s",
+                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(197,160,89,0.07)"; e.currentTarget.style.color = "#C5A059"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "rgba(201,195,185,0.55)"; }}
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        </nav>
+
+        {/* Bottom */}
+        <div style={{ padding: "12px 8px 20px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+          {[{ icon: "settings", label: "Settings" }, { icon: "help_center", label: "Support" }].map(({ icon, label }) => (
+            <button key={label} className="chat-sidebar-link">
+              <span className="material-symbols-outlined" style={{ fontSize: 19 }}>{icon}</span>
+              {label}
+            </button>
+          ))}
         </div>
       </aside>
 
-      {/* Main Content Canvas */}
-      <main className="flex-1 flex flex-col md:ml-72 bg-[#131313] relative h-full">
-        {/* TopAppBar */}
-        <header className="flex justify-between items-center w-full px-6 md:px-8 py-5 bg-[#131313]/90 backdrop-blur-md sticky top-0 z-40 border-b border-[#4e4639]/20">
-          <div className="md:hidden flex items-center gap-2">
-             <Link to="/">
-              <div className="w-8 h-8 bg-gradient-to-br from-[#e9c176] to-[#c5a059] flex items-center justify-center rounded-sm">
-                <span className="material-symbols-outlined text-[#412d00] text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>balance</span>
-              </div>
-            </Link>
-            <h1 className="nyaya-h3 italic text-[#e9c176] text-xl tracking-tighter">NyayaBot</h1>
-          </div>
-          <div className="hidden md:block">
-            <h2 className="nyaya-h3 font-bold text-lg tracking-tight text-[#e5e2e1]" style={{ fontSize: "1.2rem" }}>Case File: 2024/CONST/882</h2>
-          </div>
-          <div className="flex items-center gap-4 md:gap-6">
-            <button className="text-[#d1c5b4] hover:text-[#e9c176] transition-colors duration-300">
-              <span className="material-symbols-outlined">gavel</span>
+      {/* ─── MAIN ─────────────────────────────────────────────────────── */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", marginLeft: 268, minWidth: 0 }}
+        // On mobile, no margin since sidebar is overlay
+        className="chat-main"
+      >
+        <style>{`
+          @media (max-width: 768px) {
+            .chat-sidebar { display: none !important; }
+            .chat-sidebar.open { display: flex !important; }
+            .chat-main { margin-left: 0 !important; }
+          }
+        `}</style>
+
+        {/* ── Top Bar ── */}
+        <header style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "14px 24px",
+          borderBottom: isEmpty ? "none" : "1px solid rgba(255,255,255,0.05)",
+          background: "rgba(13,13,13,0.8)",
+          backdropFilter: "blur(12px)",
+          position: "sticky", top: 0, zIndex: 30,
+          flexShrink: 0,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setSidebarOpen(o => !o)}
+              style={{ display: "none", background: "none", border: "none", cursor: "pointer", color: "rgba(201,195,185,0.6)", padding: 4 }}
+              className="mobile-menu-btn"
+            >
+              <span className="material-symbols-outlined">menu</span>
             </button>
-            <button className="text-[#d1c5b4] hover:text-[#e9c176] transition-colors duration-300">
-              <span className="material-symbols-outlined">account_balance</span>
+            <style>{`.mobile-menu-btn { display: none; } @media (max-width:768px) { .mobile-menu-btn { display:flex !important; } }`}</style>
+
+            {!isEmpty && (
+              <span style={{ fontSize: 13.5, color: "rgba(201,195,185,0.5)", fontWeight: 500 }}>
+                Case File: 2024/CONST/882
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <button className="icon-btn" style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(201,195,185,0.5)", borderRadius: 8, padding: "6px 8px", transition: "all 0.2s" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 21 }}>gavel</span>
             </button>
-            <div className="w-8 h-8 rounded-full overflow-hidden border border-[#4e4639]/50 bg-[#2a2a2a] flex items-center justify-center">
-              <span className="material-symbols-outlined text-[#e9c176] text-sm">person</span>
+            <button className="icon-btn" style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(201,195,185,0.5)", borderRadius: 8, padding: "6px 8px", transition: "all 0.2s" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 21 }}>account_balance</span>
+            </button>
+            <div style={{
+              width: 34, height: 34, borderRadius: "50%",
+              background: "rgba(197,160,89,0.15)", border: "1px solid rgba(197,160,89,0.25)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 18, color: "#C5A059" }}>person</span>
             </div>
           </div>
         </header>
 
-        {/* Chat Conversation Area */}
-        <section className="flex-1 overflow-y-auto px-4 md:px-8 py-8 md:py-12 space-y-8 md:space-y-12 max-w-4xl mx-auto w-full scroll-smooth">
-          {messages.map((msg, idx) => {
-            if (msg.isWelcome) {
-              return (
-                <div key={idx} className="flex flex-col items-center mb-10 md:mb-16 text-center animate-fade-in-up">
-                  <span className="material-symbols-outlined text-4xl text-[#e9c176] mb-4" style={{ fontVariationSettings: "'FILL' 1" }}>gavel</span>
-                  <h3 className="nyaya-h3 text-3xl mb-3 text-[#e5e2e1]">{msg.content}</h3>
-                  <p className="text-[#d1c5b4] max-w-md text-sm leading-relaxed">{msg.subcontent}</p>
-                </div>
-              );
-            }
-
-            if (msg.type === "user") {
-              return (
-                <div key={idx} className="flex flex-col items-end gap-2 animate-fade-in-up">
-                  <div className="bg-[#2a2a2a] px-5 py-4 rounded-xl rounded-tr-sm max-w-[90%] md:max-w-[75%] border-b border-[#4e4639]/30 shadow-md">
-                    <p className="text-[#e5e2e1] leading-relaxed text-sm md:text-[15px]">{msg.content}</p>
-                  </div>
-                  {msg.time && <span className="text-[10px] text-[#d1c5b4]/60 font-medium px-1 uppercase tracking-tighter">{msg.time}</span>}
-                </div>
-              );
-            }
-
-            return (
-              <div key={idx} className="flex flex-col items-start gap-3 animate-fade-in-up">
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 bg-[#e9c176]/20 flex items-center justify-center rounded-sm">
-                    <span className="material-symbols-outlined text-[#e9c176] text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>balance</span>
-                  </div>
-                  <span className="text-[10px] text-[#e9c176] font-bold uppercase tracking-widest">NyayaBot Response</span>
-                </div>
-                <div className="bg-[#0e0e0e] px-6 py-6 md:px-8 md:py-8 rounded-xl rounded-tl-sm max-w-[95%] space-y-4 border border-[#4e4639]/20 shadow-lg">
-                  <p className="text-[#e5e2e1] leading-relaxed text-sm md:text-[15px]">{msg.content}</p>
-                  
-                  {msg.citations && msg.citations.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 my-6">
-                      {msg.citations.map((cite, cIdx) => (
-                        <div key={cIdx} className="bg-[#1c1b1b] p-4 rounded-md border-l-2 border-[#e9c176]/60 hover:bg-[#2a2a2a] transition-colors cursor-pointer group">
-                          <h4 className="nyaya-h3 italic text-[#e9c176] text-sm mb-2 group-hover:text-[#f3d699] transition-colors" style={{ fontSize: "1rem" }}>{cite.title}</h4>
-                          <p className="text-xs text-[#d1c5b4] leading-relaxed opacity-90">{cite.desc}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {msg.closing && (
-                    <p className="text-[#e5e2e1] leading-relaxed text-sm md:text-[15px]">{msg.closing}</p>
-                  )}
-                </div>
-                <div className="flex gap-4 px-2 mt-1">
-                  <button className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-[#d1c5b4] hover:text-[#e9c176] transition-colors">
-                    <span className="material-symbols-outlined text-[13px]">content_copy</span> Copy Citation
-                  </button>
-                  <button className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-[#d1c5b4] hover:text-[#e9c176] transition-colors">
-                    <span className="material-symbols-outlined text-[13px]">share</span> Share Brief
-                  </button>
-                </div>
+        {/* ── Messages / Empty State ── */}
+        <div style={{ flex: 1, overflowY: "auto", padding: isEmpty ? 0 : "32px 0 160px", position: "relative" }}>
+          {isEmpty ? (
+            /* ── EMPTY STATE (ChatGPT-style centered) ── */
+            <div style={{
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              height: "100%", padding: "0 24px", textAlign: "center",
+              paddingBottom: "120px",
+            }}>
+              {/* Gavel icon */}
+              <div style={{
+                width: 60, height: 60, borderRadius: 16, marginBottom: 28,
+                background: "linear-gradient(135deg, rgba(197,160,89,0.2), rgba(197,160,89,0.05))",
+                border: "1px solid rgba(197,160,89,0.2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 30, color: "#C5A059" }}>balance</span>
               </div>
-            );
-          })}
-          {/* Spacer for bottom padding against fixed input */}
-          <div className="h-40 md:h-32 w-full"></div>
-        </section>
 
-        {/* Fixed Bottom Input Area */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#131313] via-[#131313] to-transparent pt-6 pb-4 md:pb-8 px-4 md:px-8 z-50">
-          <div className="max-w-4xl mx-auto bg-[#0e0e0e]/80 backdrop-blur-xl border border-[#4e4639]/50 rounded-2xl p-2 md:p-3 shadow-2xl focus-within:border-[#e9c176]/50 transition-colors duration-300">
-            <div className="flex items-end gap-2 md:gap-4">
-              <div className="flex gap-1 md:gap-2 pl-2 pb-2">
-                <button className="text-[#9a8f80] hover:text-[#e9c176] p-2 hover:bg-[#e9c176]/10 rounded-full transition-all" title="Upload Document">
-                  <span className="material-symbols-outlined text-lg md:text-xl">attach_file</span>
+              <h2 style={{
+                fontFamily: "'Cormorant Garamond', serif", fontWeight: 600,
+                fontSize: "clamp(24px, 3.5vw, 38px)", color: "#e8e4de",
+                marginBottom: 12, lineHeight: 1.2,
+              }}>
+                What's on your legal mind?
+              </h2>
+              <p style={{
+                fontSize: 15, color: "rgba(201,195,185,0.55)", lineHeight: 1.7,
+                maxWidth: 400, marginBottom: 42, fontFamily: "'DM Sans', sans-serif",
+              }}>
+                Ask NyayaBot about Indian law, constitutional rights, statutes, or legal procedures.
+              </p>
+
+              {/* Suggestion chips */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", maxWidth: 600 }}>
+                {suggestions.map(s => (
+                  <button
+                    key={s}
+                    className="suggestion-chip"
+                    onClick={() => sendMessage(s)}
+                    style={{
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: 999,
+                      padding: "9px 18px",
+                      fontSize: 13,
+                      color: "rgba(201,195,185,0.75)",
+                      cursor: "pointer",
+                      fontFamily: "'DM Sans', sans-serif",
+                      transition: "all 0.2s",
+                      textAlign: "left",
+                    }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* ── MESSAGES ── */
+            <div style={{ maxWidth: 740, margin: "0 auto", padding: "0 20px", display: "flex", flexDirection: "column", gap: 28 }}>
+              {messages.map(msg =>
+                msg.role === "user"
+                  ? <UserBubble key={msg.id} message={msg} />
+                  : <BotBubble key={msg.id} message={msg} />
+              )}
+
+              {/* Loading indicator */}
+              {isLoading && (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, animation: "fadeSlideUp 0.3s ease" }}>
+                  <div style={{
+                    width: 26, height: 26, background: "rgba(197,160,89,0.15)",
+                    border: "1px solid rgba(197,160,89,0.3)", borderRadius: 6,
+                    display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 3,
+                  }}>
+                    <img src={logoImg} alt="NyayaBot" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                  </div>
+                  <div style={{ display: "flex", gap: 5, alignItems: "center", padding: "12px 18px", background: "#111", borderRadius: "4px 18px 18px 18px", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    {[0, 1, 2].map(i => (
+                      <div key={i} style={{
+                        width: 6, height: 6, borderRadius: "50%", background: "#C5A059",
+                        animation: `typing 1.2s ${i * 0.2}s ease-in-out infinite`
+                      }} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div ref={bottomRef} />
+            </div>
+          )}
+        </div>
+
+        {/* ── INPUT BAR ── */}
+        <div style={{
+          position: "sticky", bottom: 0,
+          padding: isEmpty ? "16px 20px 28px" : "12px 20px 24px",
+          background: "linear-gradient(to top, #0D0D0D 60%, transparent)",
+        }}>
+          <div style={{ maxWidth: 740, margin: "0 auto" }}>
+            <div style={{
+              display: "flex", alignItems: "flex-end", gap: 0,
+              background: "#1a1a1a",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 16,
+              padding: "8px 8px 8px 14px",
+              transition: "border-color 0.25s",
+              boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
+            }}
+              onFocusCapture={e => ((e.currentTarget as HTMLDivElement).style.borderColor = "rgba(197,160,89,0.45)")}
+              onBlurCapture={e => ((e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.1)")}
+            >
+              {/* File/Photo buttons */}
+              <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.txt" style={{ display: "none" }} />
+              <input ref={photoInputRef} type="file" accept="image/*" style={{ display: "none" }} />
+
+              <div style={{ display: "flex", gap: 2, alignItems: "flex-end", paddingBottom: 8 }}>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="icon-btn"
+                  title="Attach document"
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(201,195,185,0.4)", borderRadius: 8, padding: "6px 8px", transition: "all 0.2s" }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 20 }}>attach_file</span>
                 </button>
-                <button className="text-[#9a8f80] hover:text-[#e9c176] p-2 hover:bg-[#e9c176]/10 rounded-full transition-all" title="Upload Photo">
-                  <span className="material-symbols-outlined text-lg md:text-xl">photo_camera</span>
+                <button
+                  onClick={() => photoInputRef.current?.click()}
+                  className="icon-btn"
+                  title="Upload image"
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(201,195,185,0.4)", borderRadius: 8, padding: "6px 8px", transition: "all 0.2s" }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 20 }}>photo_camera</span>
                 </button>
               </div>
-              
-              <textarea 
-                className="flex-1 bg-transparent border-none focus:ring-0 text-[#e5e2e1] placeholder:text-[#9a8f80]/60 resize-none py-3 text-sm md:text-base max-h-32 min-h-[44px]" 
-                placeholder="Inquire about statutes, precedents, or legal theories..." 
-                rows={1}
+
+              {/* Textarea */}
+              <textarea
+                ref={textareaRef}
                 value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
+                onChange={handleTextareaChange}
                 onKeyDown={handleKeyDown}
-                style={{ outline: 'none' }}
+                placeholder="Inquire about statutes, precedents, or legal theories..."
+                rows={1}
+                style={{
+                  flex: 1,
+                  background: "none",
+                  border: "none",
+                  outline: "none",
+                  resize: "none",
+                  fontSize: 14.5,
+                  lineHeight: 1.6,
+                  color: "#e8e4de",
+                  fontFamily: "'DM Sans', sans-serif",
+                  padding: "8px 12px",
+                  maxHeight: 160,
+                  minHeight: 38,
+                  overflowY: "auto",
+                  caretColor: "#C5A059",
+                }}
               />
-              
-              <button 
-                onClick={handleSend}
-                disabled={!inputText.trim()}
-                className={`mb-1 mr-1 ${inputText.trim() ? 'bg-gradient-to-tr from-[#e9c176] to-[#c5a059] text-[#412d00] shadow-lg hover:shadow-xl hover:scale-105 active:scale-95' : 'bg-[#2a2a2a] text-[#9a8f80] cursor-not-allowed'} font-bold w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all`}
-                title="Send Message"
+
+              {/* Send button */}
+              <button
+                className="chat-send-btn"
+                disabled={!inputText.trim() || isLoading}
+                onClick={() => sendMessage()}
+                style={{
+                  width: 40, height: 40,
+                  borderRadius: 10,
+                  border: "none",
+                  cursor: inputText.trim() && !isLoading ? "pointer" : "not-allowed",
+                  background: inputText.trim() && !isLoading
+                    ? "linear-gradient(135deg, #C5A059, #8B6F3A)"
+                    : "rgba(255,255,255,0.07)",
+                  color: inputText.trim() && !isLoading ? "#1a0e00" : "rgba(201,195,185,0.3)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0, alignSelf: "flex-end", marginBottom: 2,
+                  boxShadow: inputText.trim() && !isLoading ? "0 4px 20px rgba(197,160,89,0.3)" : "none",
+                }}
               >
-                 <span className="material-symbols-outlined">send</span>
+                <span className="material-symbols-outlined" style={{ fontSize: 19, fontVariationSettings: "'FILL' 1" }}>
+                  {isLoading ? "hourglass_empty" : "arrow_upward"}
+                </span>
               </button>
             </div>
-          </div>
-          
-          <div className="max-w-4xl mx-auto flex justify-between items-center mt-3 px-2">
-            <div className="flex gap-4">
-              <span className="text-[9px] uppercase tracking-widest text-[#9a8f80]/50 hidden sm:inline-block">Model: Juris-v4 High Precision</span>
-              <span className="text-[9px] uppercase tracking-widest text-[#9a8f80]/50 hidden sm:inline-block">Encryption: AES-256 Legal Grade</span>
+
+            {/* Footer hint */}
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 10, gap: 24 }}>
+              <span style={{ fontSize: 10.5, color: "rgba(201,195,185,0.28)", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.05em" }}>
+                Enter to send  ·  Shift+Enter for new line
+              </span>
             </div>
-            <p className="text-[9px] text-[#9a8f80]/50 text-center w-full sm:w-auto">NyayaBot can make mistakes. Check important information.</p>
           </div>
         </div>
-      </main>
-
-      {/* Mobile Navigation Overlay */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0e0e0e] border-t border-[#4e4639]/30 flex justify-around items-center z-[60] pb-safe">
-        <button className="flex flex-col items-center gap-1.5 p-2 w-16">
-          <span className="material-symbols-outlined text-[#e9c176] text-xl">add_notes</span>
-        </button>
-        <button className="flex flex-col items-center gap-1.5 p-2 w-16">
-          <span className="material-symbols-outlined text-[#9a8f80] hover:text-[#e9c176] transition-colors text-xl">history</span>
-        </button>
-        <button className="flex flex-col items-center gap-1.5 p-2 w-16">
-          <span className="material-symbols-outlined text-[#9a8f80] hover:text-[#e9c176] transition-colors text-xl">balance</span>
-        </button>
-        <button className="flex flex-col items-center gap-1.5 p-2 w-16">
-          <span className="material-symbols-outlined text-[#9a8f80] hover:text-[#e9c176] transition-colors text-xl">settings</span>
-        </button>
       </div>
-
     </div>
   );
 };
