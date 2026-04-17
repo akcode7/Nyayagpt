@@ -1,7 +1,7 @@
 import { AshokChakra } from "./AshokChakra";
 import GradualBlur from "./GradualBlur";
 import { Link } from "react-router";
-import logoImg from "../../imports/Gemini_Generated_Image_z8chg2z8chg2z8ch.png";
+import logoImg from "../../imports/new_logo.png";
 import { useLanguage } from "../context/LanguageContext";
 import type { TranslationKey } from "../context/LanguageContext";
 

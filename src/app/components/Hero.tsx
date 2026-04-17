@@ -6,7 +6,7 @@ import BorderGlow from "./BorderGlow";
 import GradualBlur from "./GradualBlur";
 import BlurText from "./BlurText";
 import DarkVeil from "./DarkVeil";
-import logoImg from "../../imports/Gemini_Generated_Image_z8chg2z8chg2z8ch.png";
+import logoImg from "../../imports/new_logo.png";
 import { useLanguage } from "../context/LanguageContext";
 
 const avatar1 = "https://images.unsplash.com/photo-1649433658557-54cf58577c68?w=80&h=80&fit=crop&crop=face";

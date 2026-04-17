@@ -2,7 +2,7 @@ import { motion } from "motion/react";
 import { AshokChakra } from "./AshokChakra";
 import GradualBlur from "./GradualBlur";
 import PixelBlast from "./PixelBlast";
-import logoImg from "../../imports/Gemini_Generated_Image_z8chg2z8chg2z8ch.png";
+import logoImg from "../../imports/new_logo.png";
 import { useLanguage } from "../context/LanguageContext";
 
 function ChatWindowMockup({ t }: { t: (k: string) => string }) {
