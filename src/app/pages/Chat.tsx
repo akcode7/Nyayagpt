@@ -387,15 +387,7 @@ export const Chat = () => {
               height: "100%", padding: "0 24px", textAlign: "center",
               paddingBottom: "120px",
             }}>
-              {/* Gavel icon */}
-              <div style={{
-                width: 60, height: 60, borderRadius: 16, marginBottom: 28,
-                background: "linear-gradient(135deg, rgba(197,160,89,0.2), rgba(197,160,89,0.05))",
-                border: "1px solid rgba(197,160,89,0.2)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 30, color: "#C5A059" }}>balance</span>
-              </div>
+
 
               <h2 style={{
                 fontFamily: "'Cormorant Garamond', serif", fontWeight: 600,
