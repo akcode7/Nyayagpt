@@ -470,11 +470,11 @@ export const Chat = () => {
         }}>
           <div style={{ maxWidth: 740, margin: "0 auto" }}>
             <div style={{
-              display: "flex", alignItems: "flex-end", gap: 0,
+              display: "flex", alignItems: "center", gap: 0,
               background: "#1a1a1a",
               border: "1px solid rgba(255,255,255,0.1)",
               borderRadius: 16,
-              padding: "8px 8px 8px 14px",
+              padding: "6px 8px 6px 8px",
               transition: "border-color 0.25s",
               boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
             }}
@@ -485,7 +485,7 @@ export const Chat = () => {
               <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.txt" style={{ display: "none" }} />
               <input ref={photoInputRef} type="file" accept="image/*" style={{ display: "none" }} />
 
-              <div style={{ display: "flex", gap: 2, alignItems: "flex-end", paddingBottom: 8 }}>
+              <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className="icon-btn"
@@ -522,11 +522,12 @@ export const Chat = () => {
                   lineHeight: 1.6,
                   color: "#e8e4de",
                   fontFamily: "'DM Sans', sans-serif",
-                  padding: "8px 12px",
+                  padding: "10px 12px",
                   maxHeight: 160,
                   minHeight: 38,
                   overflowY: "auto",
                   caretColor: "#C5A059",
+                  alignSelf: "center",
                 }}
               />
 
@@ -536,7 +537,7 @@ export const Chat = () => {
                 disabled={!inputText.trim() || isLoading}
                 onClick={() => sendMessage()}
                 style={{
-                  width: 40, height: 40,
+                  width: 38, height: 38,
                   borderRadius: 10,
                   border: "none",
                   cursor: inputText.trim() && !isLoading ? "pointer" : "not-allowed",
@@ -545,7 +546,7 @@ export const Chat = () => {
                     : "rgba(255,255,255,0.07)",
                   color: inputText.trim() && !isLoading ? "#1a0e00" : "rgba(201,195,185,0.3)",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0, alignSelf: "flex-end", marginBottom: 2,
+                  flexShrink: 0, alignSelf: "center",
                   boxShadow: inputText.trim() && !isLoading ? "0 4px 20px rgba(197,160,89,0.3)" : "none",
                 }}
               >
