@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
 import logoImg from "../../imports/new_logo.png";
+import { GravityStarsBackground } from "../components/GravityStars";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -171,7 +172,34 @@ export const Chat = () => {
       color: "#e8e4de",
       fontFamily: "'DM Sans', sans-serif",
       overflow: "hidden",
+      position: "relative",
     }}>
+      {/* ── GRAVITY STARS BACKGROUND ── */}
+      <div style={{
+        position: "absolute", inset: 0, zIndex: 0,
+        color: "rgba(197,160,89,0.6)",  /* stars inherit this color */
+        pointerEvents: "none",
+      }}>
+        <GravityStarsBackground
+          starsCount={90}
+          starsSize={1.5}
+          starsOpacity={0.55}
+          glowIntensity={12}
+          glowAnimation="ease"
+          movementSpeed={0.25}
+          mouseInfluence={130}
+          mouseGravity="attract"
+          gravityStrength={80}
+          style={{
+            position: "absolute", inset: 0,
+            width: "100%", height: "100%",
+            color: "rgba(197,160,89,0.7)",
+          }}
+        />
+      </div>
+
+      {/* All page content sits above the stars */}
+      <div style={{ position: "relative", zIndex: 1, display: "flex", width: "100%", height: "100%", overflow: "hidden" }}>
       {/* ── KEYFRAMES ── */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap');
@@ -564,6 +592,7 @@ export const Chat = () => {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
