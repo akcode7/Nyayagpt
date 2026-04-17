@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router";
 import logoImg from "../../imports/Gemini_Generated_Image_z8chg2z8chg2z8ch.png";
 import { useLanguage } from "../context/LanguageContext";
 import type { TranslationKey } from "../context/LanguageContext";
@@ -10,6 +11,14 @@ const navLinkKeys: TranslationKey[] = [
   "navAbout",
   "navBlog",
 ];
+
+const navPathMap: Record<string, string> = {
+  navHome: "/",
+  navHowItWorks: "/how-it-works",
+  navFeatures: "/features",
+  navAbout: "/about",
+  navBlog: "/blog",
+};
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -58,7 +67,7 @@ export function Navbar() {
         }}
       >
         {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+        <Link to="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
           <img
             src={logoImg}
             alt="NyayaBot Logo"
@@ -75,7 +84,7 @@ export function Navbar() {
           >
             NyayaBot
           </span>
-        </div>
+        </Link>
 
         {/* Desktop Nav Links */}
         <div
@@ -83,9 +92,9 @@ export function Navbar() {
           className="hidden md:flex"
         >
           {navLinkKeys.map((key) => (
-            <a
+            <Link
               key={key}
-              href="#"
+              to={navPathMap[key] || "/"}
               className="nav-link dm-sans"
               style={{
                 fontSize: 14,
@@ -95,14 +104,14 @@ export function Navbar() {
               }}
             >
               {t(key)}
-            </a>
+            </Link>
           ))}
         </div>
 
         {/* CTA Group */}
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <a
-            href="#"
+          <Link
+            to="/"
             className="ghost-btn dm-sans hidden md:flex"
             style={{
               fontSize: 14,
@@ -119,9 +128,9 @@ export function Navbar() {
             <span className="text-container">
               <span className="text">{t("navLogin")}</span>
             </span>
-          </a>
-          <a
-            href="#"
+          </Link>
+          <Link
+            to="/how-it-works"
             className="primary-btn dm-sans cta-glow"
             style={{
               fontSize: 14,
@@ -141,7 +150,7 @@ export function Navbar() {
             <span className="text-container">
               <span className="text">{t("navTryFree")}</span>
             </span>
-          </a>
+          </Link>
 
           {/* Mobile menu button */}
           <button
@@ -186,9 +195,10 @@ export function Navbar() {
           }}
         >
           {navLinkKeys.map((key) => (
-            <a
+            <Link
               key={key}
-              href="#"
+              to={navPathMap[key] || "/"}
+              onClick={() => setMobileOpen(false)}
               className="dm-sans"
               style={{
                 fontSize: 16,
@@ -200,11 +210,12 @@ export function Navbar() {
               }}
             >
               {t(key)}
-            </a>
+            </Link>
           ))}
           <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
-            <a
-              href="#"
+            <Link
+              to="/"
+              onClick={() => setMobileOpen(false)}
               className="dm-sans"
               style={{
                 flex: 1,
@@ -219,9 +230,10 @@ export function Navbar() {
               }}
             >
               {t("navLogin")}
-            </a>
-            <a
-              href="#"
+            </Link>
+            <Link
+              to="/how-it-works"
+              onClick={() => setMobileOpen(false)}
               className="dm-sans"
               style={{
                 flex: 1,
@@ -236,7 +248,7 @@ export function Navbar() {
               }}
             >
               {t("navTryFreeMobile")}
-            </a>
+            </Link>
           </div>
         </div>
       )}

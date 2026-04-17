@@ -1,5 +1,6 @@
 import { AshokChakra } from "./AshokChakra";
 import GradualBlur from "./GradualBlur";
+import { Link } from "react-router";
 import logoImg from "../../imports/Gemini_Generated_Image_z8chg2z8chg2z8ch.png";
 import { useLanguage } from "../context/LanguageContext";
 import type { TranslationKey } from "../context/LanguageContext";
@@ -14,6 +15,22 @@ const footerSections: FooterLinkSection[] = [
   { label: "footerResources", links: ["flConstitution", "flRights", "flGlossary", "flBlog"] },
   { label: "footerCompany",   links: ["flAbout", "flContact", "flPrivacy", "flTerms"] },
 ];
+
+const routeMap: Record<string, string> = {
+  flHowItWorks: "/how-it-works",
+  flFeatures: "/features",
+  flTryNow: "/",
+  flPricing: "/",
+  flApi: "/",
+  flConstitution: "/",
+  flRights: "/",
+  flGlossary: "/",
+  flBlog: "/blog",
+  flAbout: "/about",
+  flContact: "/",
+  flPrivacy: "/",
+  flTerms: "/",
+};
 
 function TwitterIcon() {
   return (
@@ -65,7 +82,7 @@ export function Footer() {
       >
         {/* Col 1 — Brand */}
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>
+          <Link to="/" style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14, textDecoration: "none" }}>
             <img
               src={logoImg}
               alt="NyayaBot Logo"
@@ -77,7 +94,7 @@ export function Footer() {
             >
               NyayaBot
             </span>
-          </div>
+          </Link>
           <p
             className="dm-sans"
             style={{
@@ -97,13 +114,15 @@ export function Footer() {
           {/* Social icons */}
           <div style={{ display: "flex", gap: 14 }}>
             {[
-              { icon: <TwitterIcon />, label: "Twitter" },
-              { icon: <LinkedInIcon />, label: "LinkedIn" },
-              { icon: <InstagramIcon />, label: "Instagram" },
-            ].map(({ icon, label }) => (
+              { icon: <TwitterIcon />, label: "Twitter", href: "https://twitter.com" },
+              { icon: <LinkedInIcon />, label: "LinkedIn", href: "https://linkedin.com" },
+              { icon: <InstagramIcon />, label: "Instagram", href: "https://instagram.com" },
+            ].map(({ icon, label, href }) => (
               <a
                 key={label}
-                href="#"
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label={label}
                 style={{
                   color: "rgba(255,255,255,0.3)",
@@ -139,8 +158,8 @@ export function Footer() {
             <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 11 }}>
               {links.map((linkKey) => (
                 <li key={linkKey}>
-                  <a
-                    href="#"
+                  <Link
+                    to={routeMap[linkKey] || "/"}
                     className="dm-sans"
                     style={{
                       fontSize: 14,
@@ -152,7 +171,7 @@ export function Footer() {
                     onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.35)")}
                   >
                     {t(linkKey)}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
