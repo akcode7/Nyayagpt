@@ -29,13 +29,36 @@ function getTime() {
   return `${h % 12 || 12}:${m < 10 ? "0" + m : m} ${ampm}`;
 }
 
+function prettifyCompactLegalText(input: string) {
+  const camelBoundaries = (input.match(/[a-z][A-Z]/g) || []).length;
+  const spaceRatio = input.length > 0 ? (input.match(/\s/g) || []).length / input.length : 0;
+  const looksCollapsed = camelBoundaries >= 6 || spaceRatio < 0.08;
+
+  if (!looksCollapsed) {
+    return input.trim();
+  }
+
+  return input
+    .replace(/\r\n?/g, "\n")
+    .replace(/##(?=[A-Za-z])/g, "## ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([.!?])(\w)/g, "$1 $2")
+    .replace(/(Summary|Key\s*Points|Source\s*Quote|Conclusion)\s*:/gi, "\n$1:\n")
+    .replace(/-\s*(?=[A-Za-z])/g, "\n- ")
+    .replace(/\s+\n/g, "\n")
+    .replace(/\n\s+/g, "\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function cleanAssistantResponse(raw: string) {
   const withoutDoneEvent = raw.replace(/event\s*:\s*done/gi, "").trim();
 
   const finalAnswerMatch = withoutDoneEvent.match(/final\s*answer\s*:\s*/i);
   if (finalAnswerMatch && finalAnswerMatch.index !== undefined) {
     const finalOnly = withoutDoneEvent.slice(finalAnswerMatch.index + finalAnswerMatch[0].length).trim();
-    if (finalOnly) return finalOnly;
+    if (finalOnly) return prettifyCompactLegalText(finalOnly);
   }
 
   const filteredLines = withoutDoneEvent
@@ -44,7 +67,7 @@ function cleanAssistantResponse(raw: string) {
     .filter(Boolean)
     .filter(line => !/^(thought|action|actioninput|observation)\s*:/i.test(line));
 
-  return filteredLines.join("\n").trim();
+  return prettifyCompactLegalText(filteredLines.join("\n"));
 }
 
 // ─── Chat Message Bubble ──────────────────────────────────────────────────────
