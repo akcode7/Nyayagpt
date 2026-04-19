@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
 import logoImg from "../../imports/new_logo.png";
 import { GravityStarsBackground } from "../components/GravityStars";
+import { chatStream } from "../../lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -114,11 +115,13 @@ export const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const isEmpty = messages.length === 0;
 
@@ -127,6 +130,12 @@ export const Chat = () => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
   // Auto-resize textarea
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputText(e.target.value);
@@ -134,27 +143,78 @@ export const Chat = () => {
     e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
   };
 
-  const sendMessage = (text?: string) => {
+  const sendMessage = async (text?: string) => {
     const content = (text ?? inputText).trim();
     if (!content || isLoading) return;
 
+    const activeController = new AbortController();
+    abortRef.current?.abort();
+    abortRef.current = activeController;
+
     const userMsg: Message = { id: Date.now(), role: "user", content, time: getTime() };
-    setMessages(prev => [...prev, userMsg]);
+    const assistantId = Date.now() + 1;
+    const assistantTime = getTime();
+
+    setRequestError(null);
+    setMessages(prev => [...prev, userMsg, { id: assistantId, role: "assistant", content: "", time: assistantTime }]);
     setInputText("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const botMsg: Message = {
-        id: Date.now() + 1,
-        role: "assistant",
-        content: `Thank you for your inquiry regarding "${content.slice(0, 60)}${content.length > 60 ? '...' : ''}". \n\nAs per Indian constitutional jurisprudence, this is a nuanced area of law. The Supreme Court of India has consistently held that constitutional provisions must be interpreted in light of the founding principles and evolving societal needs.\n\nFor a comprehensive legal opinion on your specific situation, I recommend consulting with a qualified advocate. I can provide general legal information and direct you to relevant statutes and precedents.`,
-        time: getTime(),
-      };
-      setMessages(prev => [...prev, botMsg]);
+    const history = [...messages, userMsg].map(msg => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
+    try {
+      let streamed = false;
+
+      const streamedResponse = await chatStream(
+        {
+          message: content,
+          history,
+        },
+        (chunk) => {
+          streamed = true;
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === assistantId
+                ? { ...msg, content: msg.content + chunk }
+                : msg,
+            ),
+          );
+        },
+        activeController.signal,
+      );
+
+      if (!streamed && streamedResponse.trim()) {
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === assistantId
+              ? { ...msg, content: streamedResponse }
+              : msg,
+          ),
+        );
+      }
+    } catch {
+      setRequestError("Could not reach the legal chat service. Please try again.");
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === assistantId
+            ? {
+              ...msg,
+              content:
+                "I am unable to reach the legal knowledge service right now. Please try again in a moment.",
+            }
+            : msg,
+        ),
+      );
+    } finally {
+      if (abortRef.current === activeController) {
+        abortRef.current = null;
+      }
       setIsLoading(false);
-    }, 1800);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -285,7 +345,10 @@ export const Chat = () => {
         {/* New Inquiry */}
         <div style={{ padding: "0 14px 16px" }}>
           <button
-            onClick={() => setMessages([])}
+            onClick={() => {
+              setMessages([]);
+              setRequestError(null);
+            }}
             style={{
               width: "100%", display: "flex", alignItems: "center", gap: 10,
               padding: "11px 16px", borderRadius: 10, cursor: "pointer",
@@ -590,6 +653,18 @@ export const Chat = () => {
                 Enter to send  ·  Shift+Enter for new line
               </span>
             </div>
+            {requestError && (
+              <div style={{
+                marginTop: 8,
+                textAlign: "center",
+                fontSize: 11.5,
+                color: "#f7b5b5",
+                letterSpacing: "0.02em",
+                fontFamily: "'DM Sans', sans-serif",
+              }}>
+                {requestError}
+              </div>
+            )}
           </div>
         </div>
       </div>
