@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
 import logoImg from "../../imports/new_logo.png";
 import { GravityStarsBackground } from "../components/GravityStars";
-import { chat } from "../../lib/api";
+import { chat, modelChat, type RetrievalModel } from "../../lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -12,12 +12,14 @@ interface Message {
   time: string;
 }
 
+type ModelChoice = "auto" | RetrievalModel;
+
 // ─── Sample suggestions shown on empty state ─────────────────────────────────
 const suggestions = [
-  "Explain punishment for theft under BNS with section-wise breakdown",
-  "What is the legal process for arrest and bail under BNSS?",
-  "Difference between cognizable and non-cognizable offences in BNSS",
-  "List key rights of an accused during criminal investigation in India",
+  "Punishments for abetment under BNS",
+  "BNSS arrest and bail process",
+  "Cognizable vs non-cognizable offences",
+  "Rights of an accused during investigation",
 ];
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
@@ -188,11 +190,14 @@ export const Chat = () => {
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<ModelChoice>("auto");
+  const [mobileModelMenuOpen, setMobileModelMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const mobileAttachInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const isEmpty = messages.length === 0;
@@ -228,6 +233,7 @@ export const Chat = () => {
     const assistantTime = getTime();
 
     setRequestError(null);
+    setMobileModelMenuOpen(false);
     setMessages(prev => [...prev, userMsg, { id: assistantId, role: "assistant", content: "", time: assistantTime }]);
     setInputText("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
@@ -239,13 +245,22 @@ export const Chat = () => {
     }));
 
     try {
-      const response = await chat(
-        {
-          message: content,
-          history,
-        },
-        activeController.signal,
-      );
+      const response = selectedModel === "auto"
+        ? await chat(
+          {
+            message: content,
+            history,
+          },
+          activeController.signal,
+        )
+        : await modelChat(
+          {
+            message: content,
+            history,
+            model: selectedModel,
+          },
+          activeController.signal,
+        );
 
       const finalDisplayText = cleanAssistantResponse(response);
 
@@ -352,9 +367,96 @@ export const Chat = () => {
         .chat-send-btn:active:not(:disabled) { transform: scale(0.95); }
         .suggestion-chip:hover { background: rgba(197,160,89,0.12) !important; border-color: rgba(197,160,89,0.4) !important; color: #C5A059 !important; }
         .icon-btn:hover { color: #C5A059 !important; background: rgba(197,160,89,0.1) !important; }
+        .model-select {
+          background: rgba(255,255,255,0.03);
+          color: rgba(232,228,222,0.9);
+          border: 1px solid rgba(197,160,89,0.22);
+          border-radius: 9px;
+          height: 32px;
+          padding: 0 30px 0 10px;
+          font-size: 12px;
+          font-family: 'DM Sans', sans-serif;
+          letter-spacing: 0.02em;
+          outline: none;
+          cursor: pointer;
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+          background-image: linear-gradient(45deg, transparent 50%, rgba(197,160,89,0.9) 50%), linear-gradient(135deg, rgba(197,160,89,0.9) 50%, transparent 50%);
+          background-position: calc(100% - 13px) 13px, calc(100% - 8px) 13px;
+          background-size: 5px 5px, 5px 5px;
+          background-repeat: no-repeat;
+        }
+        .model-select:hover {
+          border-color: rgba(197,160,89,0.45);
+          background-color: rgba(197,160,89,0.08);
+        }
+        .model-select:focus {
+          border-color: rgba(197,160,89,0.65);
+          box-shadow: 0 0 0 2px rgba(197,160,89,0.16);
+        }
+        .model-select option {
+          background: #151515;
+          color: #e8e4de;
+        }
+        .mobile-only { display: none; }
+        .desktop-only { display: flex; }
+        .mobile-model-menu {
+          position: absolute;
+          bottom: 42px;
+          left: 0;
+          min-width: 136px;
+          background: #141414;
+          border: 1px solid rgba(197,160,89,0.28);
+          border-radius: 10px;
+          box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+          padding: 6px;
+          z-index: 60;
+        }
+        .mobile-model-option {
+          width: 100%;
+          border: none;
+          background: none;
+          color: rgba(232,228,222,0.9);
+          font-family: 'DM Sans', sans-serif;
+          font-size: 12px;
+          text-align: left;
+          padding: 7px 8px;
+          border-radius: 7px;
+          cursor: pointer;
+        }
+        .mobile-model-option.active {
+          color: #C5A059;
+          background: rgba(197,160,89,0.12);
+        }
+        .mobile-model-option:hover {
+          color: #C5A059;
+          background: rgba(197,160,89,0.1);
+        }
         .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 40; }
         @media (max-width: 768px) {
           .sidebar-overlay.open { display: block; }
+          .suggestion-grid { width: 100%; max-width: 100% !important; }
+          .suggestion-chip {
+            width: 100%;
+            text-align: left !important;
+            font-size: 12px !important;
+            line-height: 1.4;
+            padding: 10px 14px !important;
+            border-radius: 12px !important;
+            white-space: normal;
+          }
+          .desktop-only { display: none !important; }
+          .mobile-only { display: flex !important; }
+          .input-actions-mobile {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+          }
+          .model-icon-wrap {
+            position: relative;
+          }
         }
       `}</style>
 
@@ -555,7 +657,7 @@ export const Chat = () => {
               </p>
 
               {/* Suggestion chips */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", maxWidth: 600 }}>
+              <div className="suggestion-grid" style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", maxWidth: 600 }}>
                 {suggestions.map(s => (
                   <button
                     key={s}
@@ -635,8 +737,9 @@ export const Chat = () => {
               {/* File/Photo buttons */}
               <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.txt" style={{ display: "none" }} />
               <input ref={photoInputRef} type="file" accept="image/*" style={{ display: "none" }} />
+              <input ref={mobileAttachInputRef} type="file" accept=".pdf,.doc,.docx,.txt,image/*" style={{ display: "none" }} />
 
-              <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
+              <div className="desktop-only" style={{ gap: 2, alignItems: "center" }}>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className="icon-btn"
@@ -654,6 +757,66 @@ export const Chat = () => {
                   <span className="material-symbols-outlined" style={{ fontSize: 20 }}>photo_camera</span>
                 </button>
               </div>
+
+              <div className="mobile-only input-actions-mobile">
+                <button
+                  onClick={() => mobileAttachInputRef.current?.click()}
+                  className="icon-btn"
+                  title="Attach file or image"
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(201,195,185,0.4)", borderRadius: 8, padding: "6px 8px", transition: "all 0.2s" }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 20 }}>attach_file</span>
+                </button>
+
+                <div className="model-icon-wrap">
+                  <button
+                    onClick={() => setMobileModelMenuOpen(v => !v)}
+                    className="icon-btn"
+                    title="Change model"
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(201,195,185,0.4)", borderRadius: 8, padding: "6px 8px", transition: "all 0.2s" }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 20 }}>tune</span>
+                  </button>
+
+                  {mobileModelMenuOpen && (
+                    <div className="mobile-model-menu">
+                      {[
+                        { value: "auto", label: "Auto (/chat)" },
+                        { value: "deepseek", label: "deepseek" },
+                        { value: "gemini", label: "gemini" },
+                      ].map((item) => (
+                        <button
+                          key={item.value}
+                          className={`mobile-model-option ${selectedModel === item.value ? "active" : ""}`}
+                          onClick={() => {
+                            setSelectedModel(item.value as ModelChoice);
+                            setMobileModelMenuOpen(false);
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <select
+                className="model-select desktop-only"
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value as ModelChoice)}
+                title="Select model"
+                style={{
+                  marginLeft: 8,
+                  marginRight: 6,
+                  flexShrink: 0,
+                }}
+                aria-label="Select model"
+              >
+                <option value="auto">Auto (/chat)</option>
+                <option value="deepseek">deepseek</option>
+                <option value="gemini">gemini</option>
+              </select>
 
               {/* Textarea */}
               <textarea

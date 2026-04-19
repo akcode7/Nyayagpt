@@ -10,8 +10,18 @@ export interface ChatRequest {
 	history: ChatHistoryMessage[];
 }
 
+export type RetrievalModel = "deepseek" | "gemini";
+
+export interface ModelChatRequest extends ChatRequest {
+	model: RetrievalModel;
+}
+
 interface ChatResponse {
 	response: string;
+}
+
+interface ModelChatResponse extends ChatResponse {
+	model?: string;
 }
 
 function normalizeBaseUrl(rawBaseUrl?: string) {
@@ -47,6 +57,28 @@ export async function chat(request: ChatRequest, signal?: AbortSignal): Promise<
 	const data = (await res.json()) as Partial<ChatResponse>;
 	if (typeof data.response !== "string") {
 		throw new Error("Invalid response format from /chat");
+	}
+
+	return data.response;
+}
+
+export async function modelChat(request: ModelChatRequest, signal?: AbortSignal): Promise<string> {
+	const res = await fetch(buildUrl("/modelchat"), {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(request),
+		signal,
+	});
+
+	if (!res.ok) {
+		throw new Error(`Model chat request failed with status ${res.status}`);
+	}
+
+	const data = (await res.json()) as Partial<ModelChatResponse>;
+	if (typeof data.response !== "string") {
+		throw new Error("Invalid response format from /modelchat");
 	}
 
 	return data.response;
