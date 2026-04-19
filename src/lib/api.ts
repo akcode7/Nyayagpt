@@ -33,8 +33,6 @@ function buildUrl(path: string) {
 function extractTextChunk(rawData: string): string {
 	const trimmed = rawData.trim();
 	if (!trimmed || trimmed === "[DONE]") return "";
-	if (/^event\s*:\s*done$/i.test(trimmed)) return "";
-	if (/^done$/i.test(trimmed)) return "";
 
 	try {
 		const parsed = JSON.parse(trimmed) as Record<string, unknown>;
@@ -47,6 +45,48 @@ function extractTextChunk(rawData: string): string {
 	} catch {
 		return trimmed;
 	}
+}
+
+function parseSseEventBlock(block: string) {
+	let eventName = "message";
+	const dataLines: string[] = [];
+	let sawSseField = false;
+
+	for (const rawLine of block.split(/\r?\n/)) {
+		if (!rawLine || rawLine.startsWith(":")) continue;
+
+		const separatorIndex = rawLine.indexOf(":");
+		const field = separatorIndex === -1 ? rawLine.trim() : rawLine.slice(0, separatorIndex).trim();
+		let value = separatorIndex === -1 ? "" : rawLine.slice(separatorIndex + 1);
+		if (value.startsWith(" ")) value = value.slice(1);
+
+		switch (field) {
+			case "event":
+				eventName = value || "message";
+				sawSseField = true;
+				break;
+			case "data":
+				dataLines.push(value);
+				sawSseField = true;
+				break;
+			case "id":
+			case "retry":
+				sawSseField = true;
+				break;
+			default:
+				break;
+		}
+	}
+
+	// Fallback for non-SSE plain text streams.
+	if (!sawSseField && block.trim()) {
+		dataLines.push(block.trim());
+	}
+
+	return {
+		eventName: eventName.toLowerCase(),
+		data: dataLines.join("\n"),
+	};
 }
 
 export async function chatStream(
@@ -79,33 +119,44 @@ export async function chatStream(
 	const decoder = new TextDecoder();
 	let buffer = "";
 	let fullText = "";
+	let shouldStop = false;
+
+	const processEventBlock = (block: string) => {
+		const { eventName, data } = parseSseEventBlock(block);
+		const payload = data.trim();
+		if (!payload) return;
+
+		if (eventName === "done" && payload === "[DONE]") {
+			shouldStop = true;
+			return;
+		}
+
+		const chunk = extractTextChunk(payload);
+		if (!chunk) return;
+
+		fullText += chunk;
+		onChunk(chunk);
+	};
 
 	while (true) {
 		const { done, value } = await reader.read();
 		if (done) break;
 
 		buffer += decoder.decode(value, { stream: true });
-		const lines = buffer.split(/\r?\n/);
-		buffer = lines.pop() ?? "";
+		const eventBlocks = buffer.split(/\r?\n\r?\n/);
+		buffer = eventBlocks.pop() ?? "";
 
-		for (const line of lines) {
-			const trimmedLine = line.trim();
-			if (!trimmedLine) continue;
-			if (/^(event|id|retry)\s*:/i.test(trimmedLine)) continue;
-
-			const payload = trimmedLine.startsWith("data:") ? trimmedLine.slice(5).trim() : trimmedLine;
-			const chunk = extractTextChunk(payload);
-			if (!chunk) continue;
-
-			fullText += chunk;
-			onChunk(chunk);
+		for (const block of eventBlocks) {
+			processEventBlock(block);
+			if (shouldStop) {
+				await reader.cancel();
+				return fullText;
+			}
 		}
 	}
 
-	const trailing = extractTextChunk(buffer);
-	if (trailing) {
-		fullText += trailing;
-		onChunk(trailing);
+	if (buffer.trim()) {
+		processEventBlock(buffer);
 	}
 
 	return fullText;
