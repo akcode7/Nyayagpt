@@ -17,7 +17,7 @@ type ModelChoice = "auto" | RetrievalModel;
 // ─── Sample suggestions shown on empty state ─────────────────────────────────
 const suggestions = [
   "Punishments for abetment under BNS",
-  "BNSS arrest and bail process",
+  "BNS arrest and bail process",
   "Cognizable vs non-cognizable offences",
   "Rights of an accused during investigation",
 ];
