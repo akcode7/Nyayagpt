@@ -623,10 +623,10 @@ export const Chat = () => {
             </button>
             <div style={{
               width: 34, height: 34, borderRadius: "50%",
-              background: "rgba(197,160,89,0.15)", border: "1px solid rgba(197,160,89,0.25)",
+              // background: "rgba(197,160,89,0.15)", border: "1px solid rgba(197,160,89,0.25)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 18, color: "#C5A059" }}>person</span>
+              {/* <span className="material-symbols-outlined" style={{ fontSize: 18, color: "#C5A059" }}>person</span> */}
             </div>
           </div>
         </header>

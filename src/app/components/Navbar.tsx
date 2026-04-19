@@ -111,7 +111,7 @@ export function Navbar() {
         {/* CTA Group */}
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <Link
-            to="/"
+            to="/ask"
             className="ghost-btn dm-sans hidden md:flex"
             style={{
               fontSize: 14,
