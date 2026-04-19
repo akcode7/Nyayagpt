@@ -14,10 +14,10 @@ interface Message {
 
 // ─── Sample suggestions shown on empty state ─────────────────────────────────
 const suggestions = [
-  "What is Article 21 of the Indian Constitution?",
-  "Explain the concept of Fundamental Rights vs Directive Principles",
-  "Help me understand the Right to Information Act",
-  "What are the grounds for filing a PIL in India?",
+  "Explain punishment for theft under BNS with section-wise breakdown",
+  "What is the legal process for arrest and bail under BNSS?",
+  "Difference between cognizable and non-cognizable offences in BNSS",
+  "List key rights of an accused during criminal investigation in India",
 ];
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
