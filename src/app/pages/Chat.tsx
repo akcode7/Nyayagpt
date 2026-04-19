@@ -29,6 +29,24 @@ function getTime() {
   return `${h % 12 || 12}:${m < 10 ? "0" + m : m} ${ampm}`;
 }
 
+function cleanAssistantResponse(raw: string) {
+  const withoutDoneEvent = raw.replace(/event\s*:\s*done/gi, "").trim();
+
+  const finalAnswerMatch = withoutDoneEvent.match(/final\s*answer\s*:\s*/i);
+  if (finalAnswerMatch && finalAnswerMatch.index !== undefined) {
+    const finalOnly = withoutDoneEvent.slice(finalAnswerMatch.index + finalAnswerMatch[0].length).trim();
+    if (finalOnly) return finalOnly;
+  }
+
+  const filteredLines = withoutDoneEvent
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .filter(line => !/^(thought|action|actioninput|observation)\s*:/i.test(line));
+
+  return filteredLines.join("\n").trim();
+}
+
 // ─── Chat Message Bubble ──────────────────────────────────────────────────────
 function UserBubble({ message }: { message: Message }) {
   return (
@@ -168,6 +186,7 @@ export const Chat = () => {
 
     try {
       let streamed = false;
+      let rawStreamText = "";
 
       const streamedResponse = await chatStream(
         {
@@ -176,10 +195,12 @@ export const Chat = () => {
         },
         (chunk) => {
           streamed = true;
+          rawStreamText += chunk;
+          const displayText = cleanAssistantResponse(rawStreamText);
           setMessages(prev =>
             prev.map(msg =>
               msg.id === assistantId
-                ? { ...msg, content: msg.content + chunk }
+                ? { ...msg, content: displayText }
                 : msg,
             ),
           );
@@ -187,11 +208,21 @@ export const Chat = () => {
         activeController.signal,
       );
 
-      if (!streamed && streamedResponse.trim()) {
+      const finalDisplayText = cleanAssistantResponse(streamedResponse || rawStreamText);
+
+      if (finalDisplayText) {
         setMessages(prev =>
           prev.map(msg =>
             msg.id === assistantId
-              ? { ...msg, content: streamedResponse }
+              ? { ...msg, content: finalDisplayText }
+              : msg,
+          ),
+        );
+      } else if (!streamed && streamedResponse.trim()) {
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === assistantId
+              ? { ...msg, content: streamedResponse.trim() }
               : msg,
           ),
         );

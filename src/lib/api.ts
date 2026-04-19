@@ -33,6 +33,8 @@ function buildUrl(path: string) {
 function extractTextChunk(rawData: string): string {
 	const trimmed = rawData.trim();
 	if (!trimmed || trimmed === "[DONE]") return "";
+	if (/^event\s*:\s*done$/i.test(trimmed)) return "";
+	if (/^done$/i.test(trimmed)) return "";
 
 	try {
 		const parsed = JSON.parse(trimmed) as Record<string, unknown>;
@@ -87,7 +89,11 @@ export async function chatStream(
 		buffer = lines.pop() ?? "";
 
 		for (const line of lines) {
-			const payload = line.startsWith("data:") ? line.slice(5).trim() : line.trim();
+			const trimmedLine = line.trim();
+			if (!trimmedLine) continue;
+			if (/^(event|id|retry)\s*:/i.test(trimmedLine)) continue;
+
+			const payload = trimmedLine.startsWith("data:") ? trimmedLine.slice(5).trim() : trimmedLine;
 			const chunk = extractTextChunk(payload);
 			if (!chunk) continue;
 
