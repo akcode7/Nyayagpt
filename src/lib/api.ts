@@ -30,6 +30,28 @@ function buildUrl(path: string) {
 	return `${API_BASE_URL}${normalizedPath}`;
 }
 
+export async function chat(request: ChatRequest, signal?: AbortSignal): Promise<string> {
+	const res = await fetch(buildUrl("/chat"), {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(request),
+		signal,
+	});
+
+	if (!res.ok) {
+		throw new Error(`Chat request failed with status ${res.status}`);
+	}
+
+	const data = (await res.json()) as Partial<ChatResponse>;
+	if (typeof data.response !== "string") {
+		throw new Error("Invalid response format from /chat");
+	}
+
+	return data.response;
+}
+
 function extractTextChunk(rawData: string): string {
 	const trimmed = rawData.trim();
 	if (!trimmed || trimmed === "[DONE]") return "";

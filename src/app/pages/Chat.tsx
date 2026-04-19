@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
 import logoImg from "../../imports/new_logo.png";
 import { GravityStarsBackground } from "../components/GravityStars";
-import { chatStream } from "../../lib/api";
+import { chat } from "../../lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -208,48 +208,23 @@ export const Chat = () => {
     }));
 
     try {
-      let streamed = false;
-      let rawStreamText = "";
-
-      const streamedResponse = await chatStream(
+      const response = await chat(
         {
           message: content,
           history,
         },
-        (chunk) => {
-          streamed = true;
-          rawStreamText += chunk;
-          const displayText = cleanAssistantResponse(rawStreamText);
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === assistantId
-                ? { ...msg, content: displayText }
-                : msg,
-            ),
-          );
-        },
         activeController.signal,
       );
 
-      const finalDisplayText = cleanAssistantResponse(streamedResponse || rawStreamText);
+      const finalDisplayText = cleanAssistantResponse(response);
 
-      if (finalDisplayText) {
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.id === assistantId
-              ? { ...msg, content: finalDisplayText }
-              : msg,
-          ),
-        );
-      } else if (!streamed && streamedResponse.trim()) {
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.id === assistantId
-              ? { ...msg, content: streamedResponse.trim() }
-              : msg,
-          ),
-        );
-      }
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === assistantId
+            ? { ...msg, content: finalDisplayText || response.trim() }
+            : msg,
+        ),
+      );
     } catch {
       setRequestError("Could not reach the legal chat service. Please try again.");
       setMessages(prev =>
