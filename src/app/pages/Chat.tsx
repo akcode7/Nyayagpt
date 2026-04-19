@@ -52,13 +52,44 @@ function prettifyCompactLegalText(input: string) {
     .trim();
 }
 
+function formatAssistantForDisplay(input: string) {
+  const lines = input.split(/\r?\n/);
+  let numberedPoint = 0;
+
+  const formattedLines = lines.map((rawLine) => {
+    const line = rawLine.trim();
+    if (!line) {
+      numberedPoint = 0;
+      return "";
+    }
+
+    const headingMatch = line.match(/^#{1,6}\s*(.+)$/);
+    if (headingMatch) {
+      numberedPoint = 0;
+      const heading = headingMatch[1].trim().replace(/\s*:+\s*$/, "");
+      return `${heading}:`;
+    }
+
+    const bulletMatch = line.match(/^-\s+(.+)$/);
+    if (bulletMatch) {
+      numberedPoint += 1;
+      return `${numberedPoint}. ${bulletMatch[1].trim()}`;
+    }
+
+    numberedPoint = 0;
+    return line;
+  });
+
+  return formattedLines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
 function cleanAssistantResponse(raw: string) {
   const withoutDoneEvent = raw.replace(/event\s*:\s*done/gi, "").trim();
 
   const finalAnswerMatch = withoutDoneEvent.match(/final\s*answer\s*:\s*/i);
   if (finalAnswerMatch && finalAnswerMatch.index !== undefined) {
     const finalOnly = withoutDoneEvent.slice(finalAnswerMatch.index + finalAnswerMatch[0].length).trim();
-    if (finalOnly) return prettifyCompactLegalText(finalOnly);
+    if (finalOnly) return formatAssistantForDisplay(prettifyCompactLegalText(finalOnly));
   }
 
   const filteredLines = withoutDoneEvent
@@ -67,7 +98,7 @@ function cleanAssistantResponse(raw: string) {
     .filter(Boolean)
     .filter(line => !/^(thought|action|actioninput|observation)\s*:/i.test(line));
 
-  return prettifyCompactLegalText(filteredLines.join("\n"));
+  return formatAssistantForDisplay(prettifyCompactLegalText(filteredLines.join("\n")));
 }
 
 // ─── Chat Message Bubble ──────────────────────────────────────────────────────
