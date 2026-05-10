@@ -15,6 +15,8 @@ interface Message {
 
 type ModelChoice = "auto" | RetrievalModel;
 
+type MarkdownHeadingTag = "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+
 type MarkdownBlock =
   | { type: "heading"; level: number; content: string }
   | { type: "paragraph"; content: string }
@@ -281,7 +283,8 @@ function MarkdownContent({ content }: { content: string }) {
         }
 
         if (block.type === "heading") {
-          const HeadingTag = `h${Math.min(block.level, 6)}` as keyof JSX.IntrinsicElements;
+          const headingLevel = Math.min(block.level, 6) as 1 | 2 | 3 | 4 | 5 | 6;
+          const HeadingTag = `h${headingLevel}` as MarkdownHeadingTag;
           return (
             <HeadingTag key={blockIndex} className={`assistant-markdown-h assistant-markdown-h${Math.min(block.level, 6)}`}>
               {parseInlineMarkdown(block.content)}
@@ -1211,12 +1214,50 @@ export const Chat = () => {
           )}
         </div>
 
+           
+
         {/* ── INPUT BAR ── */}
         <div style={{
           position: "sticky", bottom: 0,
           padding: isEmpty ? "16px 20px 28px" : "12px 20px 24px",
           background: "linear-gradient(to top, #0D0D0D 60%, transparent)",
         }}>
+           {selectedFiles.length > 0 ? (
+                <div style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 6,
+                  padding: "6px 4px 6px 10px",
+                  maxWidth: 220,
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                }}>
+                  {selectedFiles.map((file, index) => (
+                    <button
+                      key={`${file.name}-${file.size}-${file.lastModified}`}
+                      type="button"
+                      onClick={() => removeSelectedFile(index)}
+                      title="Remove attachment"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        border: "1px solid rgba(197,160,89,0.18)",
+                        background: "rgba(197,160,89,0.08)",
+                        borderRadius: 999,
+                        color: "rgba(232,228,222,0.84)",
+                        padding: "5px 10px",
+                        fontSize: 11,
+                        cursor: "pointer",
+                        maxWidth: 210,
+                      }}
+                    >
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</span>
+                      <span className="material-symbols-outlined" style={{ fontSize: 14 }}>close</span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
           <div style={{ maxWidth: 740, margin: "0 auto" }}>
             <div style={{
               display: "flex", alignItems: "center", gap: 0,
@@ -1288,42 +1329,7 @@ export const Chat = () => {
                 </div>
               </div>
 
-              {selectedFiles.length > 0 ? (
-                <div style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 6,
-                  padding: "6px 4px 6px 10px",
-                  maxWidth: 220,
-                  alignItems: "center",
-                }}>
-                  {selectedFiles.map((file, index) => (
-                    <button
-                      key={`${file.name}-${file.size}-${file.lastModified}`}
-                      type="button"
-                      onClick={() => removeSelectedFile(index)}
-                      title="Remove attachment"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 6,
-                        border: "1px solid rgba(197,160,89,0.18)",
-                        background: "rgba(197,160,89,0.08)",
-                        borderRadius: 999,
-                        color: "rgba(232,228,222,0.84)",
-                        padding: "5px 10px",
-                        fontSize: 11,
-                        cursor: "pointer",
-                        maxWidth: 210,
-                      }}
-                    >
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</span>
-                      <span className="material-symbols-outlined" style={{ fontSize: 14 }}>close</span>
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-
+              
               <select
                 className="model-select desktop-only"
                 value={selectedModel}
