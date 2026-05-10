@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
 import logoImg from "../../imports/new_logo.png";
 import { GravityStarsBackground } from "../components/GravityStars";
-import { chat, modelChat, type RetrievalModel } from "../../lib/api";
+import { chat, modelChat, rlmChatStream, DEFAULT_RLM_MODEL, type RetrievalModel, type RlmStreamEvent } from "../../lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -10,9 +10,18 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   time: string;
+  files?: string[];
 }
 
 type ModelChoice = "auto" | RetrievalModel;
+
+type MarkdownBlock =
+  | { type: "heading"; level: number; content: string }
+  | { type: "paragraph"; content: string }
+  | { type: "list"; ordered: boolean; items: string[] }
+  | { type: "table"; headers: string[]; rows: string[][] }
+  | { type: "blockquote"; content: string[] }
+  | { type: "divider" };
 
 // ─── Sample suggestions shown on empty state ─────────────────────────────────
 const suggestions = [
@@ -103,6 +112,235 @@ function cleanAssistantResponse(raw: string) {
   return formatAssistantForDisplay(prettifyCompactLegalText(filteredLines.join("\n")));
 }
 
+function parseStreamMessage(event: RlmStreamEvent) {
+  if (typeof event.message === "string" && event.message.trim()) return event.message.trim();
+  if (typeof event.response === "string" && event.response.trim()) return event.response.trim();
+  return "";
+}
+
+function parseInlineMarkdown(text: string) {
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  let keyIndex = 0;
+
+  const pushText = (value: string) => {
+    if (value) {
+      parts.push(value);
+    }
+  };
+
+  while (cursor < text.length) {
+    const remaining = text.slice(cursor);
+
+    const linkMatch = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/);
+    if (linkMatch) {
+      parts.push(
+        <a key={`link-${keyIndex++}`} href={linkMatch[2]} target="_blank" rel="noreferrer" style={{ color: "#C5A059", textDecoration: "underline" }}>
+          {linkMatch[1]}
+        </a>,
+      );
+      cursor += linkMatch[0].length;
+      continue;
+    }
+
+    const strongMatch = remaining.match(/^\*\*([^*]+)\*\*/);
+    if (strongMatch) {
+      parts.push(<strong key={`strong-${keyIndex++}`}>{strongMatch[1]}</strong>);
+      cursor += strongMatch[0].length;
+      continue;
+    }
+
+    const emMatch = remaining.match(/^\*([^*]+)\*/);
+    if (emMatch) {
+      parts.push(<em key={`em-${keyIndex++}`}>{emMatch[1]}</em>);
+      cursor += emMatch[0].length;
+      continue;
+    }
+
+    const codeMatch = remaining.match(/^`([^`]+)`/);
+    if (codeMatch) {
+      parts.push(
+        <code key={`code-${keyIndex++}`} style={{ padding: "0.12rem 0.35rem", borderRadius: 6, background: "rgba(197,160,89,0.12)", color: "#f0ddbb" }}>
+          {codeMatch[1]}
+        </code>,
+      );
+      cursor += codeMatch[0].length;
+      continue;
+    }
+
+    pushText(remaining[0]);
+    cursor += 1;
+  }
+
+  return parts;
+}
+
+function splitMarkdownRows(line: string) {
+  return line
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map(cell => cell.trim());
+}
+
+function isTableSeparator(line: string) {
+  return /^\s*\|?(?:\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\s*\|?\s*$/.test(line);
+}
+
+function parseMarkdownBlocks(input: string): MarkdownBlock[] {
+  const lines = input.replace(/\r\n?/g, "\n").split("\n");
+  const blocks: MarkdownBlock[] = [];
+
+  let index = 0;
+  while (index < lines.length) {
+    const line = lines[index].trim();
+
+    if (!line) {
+      index += 1;
+      continue;
+    }
+
+    if (/^---+$/.test(line)) {
+      blocks.push({ type: "divider" });
+      index += 1;
+      continue;
+    }
+
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    if (headingMatch) {
+      blocks.push({ type: "heading", level: headingMatch[1].length, content: headingMatch[2].trim() });
+      index += 1;
+      continue;
+    }
+
+    if (/^>\s?/.test(line)) {
+      const quoteLines: string[] = [];
+      while (index < lines.length && /^>\s?/.test(lines[index].trim())) {
+        quoteLines.push(lines[index].trim().replace(/^>\s?/, ""));
+        index += 1;
+      }
+      blocks.push({ type: "blockquote", content: quoteLines });
+      continue;
+    }
+
+    const tableLine = lines[index]?.trim() ?? "";
+    const nextLine = lines[index + 1]?.trim() ?? "";
+    if (tableLine.includes("|") && isTableSeparator(nextLine)) {
+      const headers = splitMarkdownRows(tableLine);
+      index += 2;
+      const rows: string[][] = [];
+      while (index < lines.length) {
+        const rowLine = lines[index].trim();
+        if (!rowLine || !rowLine.includes("|")) break;
+        rows.push(splitMarkdownRows(rowLine));
+        index += 1;
+      }
+      blocks.push({ type: "table", headers, rows });
+      continue;
+    }
+
+    const listMatch = line.match(/^(\d+\.|[-*])\s+(.+)$/);
+    if (listMatch) {
+      const ordered = Boolean(listMatch[1].match(/^\d+\.$/));
+      const items: string[] = [];
+      while (index < lines.length) {
+        const current = lines[index].trim();
+        const currentMatch = current.match(/^(\d+\.|[-*])\s+(.+)$/);
+        if (!currentMatch || Boolean(currentMatch[1].match(/^\d+\.$/)) !== ordered) break;
+        items.push(currentMatch[2].trim());
+        index += 1;
+      }
+      blocks.push({ type: "list", ordered, items });
+      continue;
+    }
+
+    const paragraphLines = [line];
+    index += 1;
+    while (index < lines.length) {
+      const current = lines[index].trim();
+      const nextIsBlock = !current || /^#{1,6}\s+/.test(current) || /^>\s?/.test(current) || /^---+$/.test(current) || /^(\d+\.|[-*])\s+/.test(current) || (current.includes("|") && isTableSeparator(lines[index + 1]?.trim() ?? ""));
+      if (nextIsBlock) break;
+      paragraphLines.push(current);
+      index += 1;
+    }
+    blocks.push({ type: "paragraph", content: paragraphLines.join(" ") });
+  }
+
+  return blocks;
+}
+
+function MarkdownContent({ content }: { content: string }) {
+  const blocks = parseMarkdownBlocks(content);
+
+  return (
+    <div className="assistant-markdown">
+      {blocks.map((block, blockIndex) => {
+        if (block.type === "divider") {
+          return <hr key={blockIndex} className="assistant-markdown-divider" />;
+        }
+
+        if (block.type === "heading") {
+          const HeadingTag = `h${Math.min(block.level, 6)}` as keyof JSX.IntrinsicElements;
+          return (
+            <HeadingTag key={blockIndex} className={`assistant-markdown-h assistant-markdown-h${Math.min(block.level, 6)}`}>
+              {parseInlineMarkdown(block.content)}
+            </HeadingTag>
+          );
+        }
+
+        if (block.type === "blockquote") {
+          return (
+            <blockquote key={blockIndex} className="assistant-markdown-quote">
+              {block.content.map((line, lineIndex) => (
+                <p key={lineIndex}>{parseInlineMarkdown(line)}</p>
+              ))}
+            </blockquote>
+          );
+        }
+
+        if (block.type === "list") {
+          const ListTag = block.ordered ? "ol" : "ul";
+          return (
+            <ListTag key={blockIndex} className={`assistant-markdown-list ${block.ordered ? "ordered" : "unordered"}`}>
+              {block.items.map((item, itemIndex) => (
+                <li key={itemIndex}>{parseInlineMarkdown(item)}</li>
+              ))}
+            </ListTag>
+          );
+        }
+
+        if (block.type === "table") {
+          return (
+            <div key={blockIndex} className="assistant-markdown-table-wrap">
+              <table className="assistant-markdown-table">
+                <thead>
+                  <tr>
+                    {block.headers.map((header, headerIndex) => (
+                      <th key={headerIndex}>{parseInlineMarkdown(header)}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {block.rows.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {block.headers.map((_, cellIndex) => (
+                        <td key={cellIndex}>{parseInlineMarkdown(row[cellIndex] ?? "")}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
+        return <p key={blockIndex} className="assistant-markdown-p">{parseInlineMarkdown(block.content)}</p>;
+      })}
+    </div>
+  );
+}
+
 // ─── Chat Message Bubble ──────────────────────────────────────────────────────
 function UserBubble({ message }: { message: Message }) {
   return (
@@ -123,6 +361,26 @@ function UserBubble({ message }: { message: Message }) {
       <span style={{ fontSize: 11, color: "rgba(200,195,188,0.45)", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.04em" }}>
         {message.time}
       </span>
+      {message.files?.length ? (
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 6, maxWidth: "72%" }}>
+          {message.files.map(file => (
+            <span
+              key={file}
+              style={{
+                padding: "4px 8px",
+                borderRadius: 999,
+                border: "1px solid rgba(197,160,89,0.2)",
+                background: "rgba(197,160,89,0.08)",
+                color: "rgba(232,228,222,0.82)",
+                fontSize: 11,
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              {file}
+            </span>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -151,15 +409,17 @@ function BotBubble({ message }: { message: Message }) {
         background: "#111111",
         border: "1px solid rgba(255,255,255,0.06)",
         borderRadius: "4px 18px 18px 18px",
-        padding: "16px 22px",
-        maxWidth: "80%",
+        padding: "16px 18px",
+        maxWidth: "100%",
+        width: "100%",
+        minWidth: 0,
         fontSize: 15,
         lineHeight: 1.75,
         color: "#d8d4ce",
         fontFamily: "'DM Sans', sans-serif",
-        whiteSpace: "pre-wrap",
+        overflowX: "auto",
       }}>
-        {message.content}
+        <MarkdownContent content={message.content} />
       </div>
       {/* Action row */}
       <div style={{ display: "flex", gap: 20, paddingLeft: 4 }}>
@@ -188,15 +448,19 @@ function BotBubble({ message }: { message: Message }) {
 export const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
+  const [rlmStatus, setRlmStatus] = useState<string | null>(null);
+  const [rlmTurns, setRlmTurns] = useState<string[]>([]);
+  const [rlmOutputs, setRlmOutputs] = useState<string[]>([]);
+  const [rlmTraceOpen, setRlmTraceOpen] = useState(true);
   const [selectedModel, setSelectedModel] = useState<ModelChoice>("auto");
   const [mobileModelMenuOpen, setMobileModelMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const photoInputRef = useRef<HTMLInputElement>(null);
   const mobileAttachInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -213,6 +477,39 @@ export const Chat = () => {
     };
   }, []);
 
+  const clearUploadState = () => {
+    setSelectedFiles([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (mobileAttachInputRef.current) mobileAttachInputRef.current.value = "";
+  };
+
+  const resetStreamState = () => {
+    setRlmStatus(null);
+    setRlmTurns([]);
+    setRlmOutputs([]);
+  };
+
+  const handleFileSelection = (files: FileList | null) => {
+    if (!files?.length) return;
+
+    const nextFiles = Array.from(files);
+    setSelectedFiles(prev => {
+      const merged = [...prev];
+      for (const file of nextFiles) {
+        const isDuplicate = merged.some(existing => existing.name === file.name && existing.size === file.size && existing.lastModified === file.lastModified);
+        if (!isDuplicate) merged.push(file);
+      }
+      return merged;
+    });
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (mobileAttachInputRef.current) mobileAttachInputRef.current.value = "";
+  };
+
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, currentIndex) => currentIndex !== index));
+  };
+
   // Auto-resize textarea
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputText(e.target.value);
@@ -224,43 +521,93 @@ export const Chat = () => {
     const content = (text ?? inputText).trim();
     if (!content || isLoading) return;
 
+    const uploadFiles = selectedFiles;
+    const shouldUseRlm = uploadFiles.length > 0;
+
     const activeController = new AbortController();
     abortRef.current?.abort();
     abortRef.current = activeController;
 
-    const userMsg: Message = { id: Date.now(), role: "user", content, time: getTime() };
+    const userMsg: Message = {
+      id: Date.now(),
+      role: "user",
+      content,
+      time: getTime(),
+      files: shouldUseRlm ? uploadFiles.map(file => file.name) : undefined,
+    };
     const assistantId = Date.now() + 1;
     const assistantTime = getTime();
 
     setRequestError(null);
     setMobileModelMenuOpen(false);
+    if (shouldUseRlm) {
+      resetStreamState();
+      setRlmTraceOpen(true);
+    }
     setMessages(prev => [...prev, userMsg, { id: assistantId, role: "assistant", content: "", time: assistantTime }]);
     setInputText("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     setIsLoading(true);
 
-    const history = [...messages, userMsg].map(msg => ({
-      role: msg.role,
-      content: msg.content,
-    }));
-
     try {
-      const response = selectedModel === "auto"
-        ? await chat(
+      let response = "";
+
+      if (shouldUseRlm) {
+        response = await rlmChatStream(
           {
-            message: content,
-            history,
+            question: content,
+            files: uploadFiles,
+            maxTurns: 10,
+            model: DEFAULT_RLM_MODEL,
           },
-          activeController.signal,
-        )
-        : await modelChat(
-          {
-            message: content,
-            history,
-            model: selectedModel,
+          (event) => {
+            const message = parseStreamMessage(event);
+
+            if (event.event === "status" && message) {
+              setRlmStatus(message);
+            }
+
+            if (event.event === "turn" && message) {
+              setRlmTurns(prev => [...prev, message]);
+            }
+
+            if (event.event === "output" && message) {
+              setRlmOutputs(prev => [...prev, message]);
+            }
+
+            if (event.event === "done") {
+              setRlmStatus(message || "Completed");
+            }
+
+            if (event.event === "error" && message) {
+              setRequestError(message);
+            }
           },
           activeController.signal,
         );
+      } else {
+        const history = [...messages, userMsg].map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        }));
+
+        response = selectedModel === "auto"
+          ? await chat(
+            {
+              message: content,
+              history,
+            },
+            activeController.signal,
+          )
+          : await modelChat(
+            {
+              message: content,
+              history,
+              model: selectedModel,
+            },
+            activeController.signal,
+          );
+      }
 
       const finalDisplayText = cleanAssistantResponse(response);
 
@@ -271,15 +618,24 @@ export const Chat = () => {
             : msg,
         ),
       );
-    } catch {
-      setRequestError("Could not reach the legal chat service. Please try again.");
+
+      if (shouldUseRlm) {
+        clearUploadState();
+      }
+    } catch (error) {
+      const failureMessage = error instanceof Error && error.message
+        ? error.message
+        : "Could not reach the legal chat service. Please try again.";
+
+      setRequestError(current => current ?? failureMessage);
       setMessages(prev =>
         prev.map(msg =>
           msg.id === assistantId
             ? {
               ...msg,
-              content:
-                "I am unable to reach the legal knowledge service right now. Please try again in a moment.",
+              content: shouldUseRlm
+                ? failureMessage
+                : "I am unable to reach the legal knowledge service right now. Please try again in a moment.",
             }
             : msg,
         ),
@@ -457,6 +813,81 @@ export const Chat = () => {
           .model-icon-wrap {
             position: relative;
           }
+
+          .assistant-markdown {
+            font-size: 13.5px;
+            line-height: 1.65;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+          }
+          .assistant-markdown-h {
+            margin: 0 0 10px;
+            line-height: 1.2;
+            color: #f4f1ea;
+            font-family: 'Cormorant Garamond', serif;
+          }
+          .assistant-markdown-h1 { font-size: 1.45rem; }
+          .assistant-markdown-h2 { font-size: 1.25rem; }
+          .assistant-markdown-h3 { font-size: 1.1rem; }
+          .assistant-markdown-h4,
+          .assistant-markdown-h5,
+          .assistant-markdown-h6 { font-size: 1rem; }
+          .assistant-markdown-p { margin: 0 0 12px; }
+          .assistant-markdown-list {
+            margin: 0 0 12px 1.2rem;
+            padding-left: 1rem;
+          }
+          .assistant-markdown-list li {
+            margin: 0 0 8px;
+            padding-left: 0.15rem;
+          }
+          .assistant-markdown-quote {
+            margin: 0 0 12px;
+            padding: 10px 12px;
+            border-left: 3px solid rgba(197,160,89,0.5);
+            background: rgba(197,160,89,0.06);
+            border-radius: 10px;
+            color: rgba(232,228,222,0.92);
+          }
+          .assistant-markdown-quote p {
+            margin: 0 0 8px;
+          }
+          .assistant-markdown-divider {
+            border: 0;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            margin: 14px 0;
+          }
+          .assistant-markdown-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            margin: 0 0 14px;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            background: rgba(0,0,0,0.18);
+          }
+          .assistant-markdown-table {
+            width: 100%;
+            min-width: 540px;
+            border-collapse: collapse;
+            font-size: 13px;
+          }
+          .assistant-markdown-table th,
+          .assistant-markdown-table td {
+            text-align: left;
+            vertical-align: top;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            border-right: 1px solid rgba(255,255,255,0.06);
+            color: rgba(232,228,222,0.9);
+          }
+          .assistant-markdown-table th {
+            background: rgba(197,160,89,0.08);
+            color: #f5eee1;
+            font-weight: 700;
+          }
+          .assistant-markdown-table tr:last-child td {
+            border-bottom: none;
+          }
         }
       `}</style>
 
@@ -510,6 +941,8 @@ export const Chat = () => {
             onClick={() => {
               setMessages([]);
               setRequestError(null);
+              resetStreamState();
+              clearUploadState();
             }}
             style={{
               width: "100%", display: "flex", alignItems: "center", gap: 10,
@@ -710,6 +1143,69 @@ export const Chat = () => {
                   </div>
                 </div>
               )}
+              {isLoading && (rlmStatus || rlmTurns.length > 0 || rlmOutputs.length > 0) ? (
+                <div style={{ width: "100%", marginTop: -4, marginBottom: 4 }}>
+                  {rlmStatus ? (
+                    <div style={{
+                      marginBottom: 10,
+                      padding: "10px 14px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(197,160,89,0.2)",
+                      background: "rgba(197,160,89,0.06)",
+                      color: "rgba(232,228,222,0.92)",
+                      fontSize: 12.5,
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}>
+                      {rlmStatus}
+                    </div>
+                  ) : null}
+                  {(rlmTurns.length > 0 || rlmOutputs.length > 0) && (
+                    <details
+                      open={rlmTraceOpen}
+                      onToggle={(e) => setRlmTraceOpen((e.currentTarget as HTMLDetailsElement).open)}
+                      style={{
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: 12,
+                        background: "rgba(17,17,17,0.7)",
+                        padding: "10px 12px",
+                      }}
+                    >
+                      <summary style={{
+                        cursor: "pointer",
+                        color: "#C5A059",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        fontFamily: "'DM Sans', sans-serif",
+                        listStyle: "none",
+                      }}>
+                        Execution Trace
+                      </summary>
+                      <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                        {rlmTurns.length > 0 ? (
+                          <div style={{ color: "rgba(232,228,222,0.75)", fontSize: 12, lineHeight: 1.55, whiteSpace: "pre-wrap", fontFamily: "'DM Sans', sans-serif" }}>
+                            {rlmTurns.map((turn, index) => `${index + 1}. ${turn}`).join("\n")}
+                          </div>
+                        ) : null}
+                        {rlmOutputs.length > 0 ? (
+                          <pre style={{
+                            margin: 0,
+                            color: "rgba(232,228,222,0.8)",
+                            background: "rgba(0,0,0,0.24)",
+                            borderRadius: 10,
+                            padding: 10,
+                            whiteSpace: "pre-wrap",
+                            fontSize: 11.5,
+                            lineHeight: 1.6,
+                            fontFamily: "'DM Sans', sans-serif",
+                          }}>
+                            {rlmOutputs.join("\n\n")}
+                          </pre>
+                        ) : null}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              ) : null}
               <div ref={bottomRef} />
             </div>
           )}
@@ -734,10 +1230,9 @@ export const Chat = () => {
               onFocusCapture={e => ((e.currentTarget as HTMLDivElement).style.borderColor = "rgba(197,160,89,0.45)")}
               onBlurCapture={e => ((e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.1)")}
             >
-              {/* File/Photo buttons */}
-              <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.txt" style={{ display: "none" }} />
-              <input ref={photoInputRef} type="file" accept="image/*" style={{ display: "none" }} />
-              <input ref={mobileAttachInputRef} type="file" accept=".pdf,.doc,.docx,.txt,image/*" style={{ display: "none" }} />
+                {/* File buttons */}
+                <input ref={fileInputRef} type="file" accept=".pdf,.md,.txt,.doc,.docx" multiple style={{ display: "none" }} onChange={e => handleFileSelection(e.target.files)} />
+                <input ref={mobileAttachInputRef} type="file" accept=".pdf,.md,.txt,.doc,.docx" multiple style={{ display: "none" }} onChange={e => handleFileSelection(e.target.files)} />
 
               <div className="desktop-only" style={{ gap: 2, alignItems: "center" }}>
                 <button
@@ -748,21 +1243,13 @@ export const Chat = () => {
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: 20 }}>attach_file</span>
                 </button>
-                <button
-                  onClick={() => photoInputRef.current?.click()}
-                  className="icon-btn"
-                  title="Upload image"
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(201,195,185,0.4)", borderRadius: 8, padding: "6px 8px", transition: "all 0.2s" }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: 20 }}>photo_camera</span>
-                </button>
               </div>
 
               <div className="mobile-only input-actions-mobile">
                 <button
                   onClick={() => mobileAttachInputRef.current?.click()}
                   className="icon-btn"
-                  title="Attach file or image"
+                  title="Attach document"
                   style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(201,195,185,0.4)", borderRadius: 8, padding: "6px 8px", transition: "all 0.2s" }}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: 20 }}>attach_file</span>
@@ -800,6 +1287,42 @@ export const Chat = () => {
                   )}
                 </div>
               </div>
+
+              {selectedFiles.length > 0 ? (
+                <div style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 6,
+                  padding: "6px 4px 6px 10px",
+                  maxWidth: 220,
+                  alignItems: "center",
+                }}>
+                  {selectedFiles.map((file, index) => (
+                    <button
+                      key={`${file.name}-${file.size}-${file.lastModified}`}
+                      type="button"
+                      onClick={() => removeSelectedFile(index)}
+                      title="Remove attachment"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        border: "1px solid rgba(197,160,89,0.18)",
+                        background: "rgba(197,160,89,0.08)",
+                        borderRadius: 999,
+                        color: "rgba(232,228,222,0.84)",
+                        padding: "5px 10px",
+                        fontSize: 11,
+                        cursor: "pointer",
+                        maxWidth: 210,
+                      }}
+                    >
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</span>
+                      <span className="material-symbols-outlined" style={{ fontSize: 14 }}>close</span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
 
               <select
                 className="model-select desktop-only"

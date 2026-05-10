@@ -2,7 +2,59 @@
 
 An AI-powered legal chatbot providing expert guidance on Indian law, constitution, and legal concepts. Built with modern web technologies and beautiful interactive UI animations.
 
-**Live Demo**: [Visit Nyayagpt](https://nyayagpt.vercel.app)
+**Live Demo**: [Visit Nyayagpt](https://nyayagptbot.vercel.app)
+
+---
+
+## 📌 Latest Updates (April 2026)
+
+This project now includes:
+
+- **Clerk Authentication** integrated at app root with route-level protection for chat.
+- **Protected Chat Route**: `/ask` is accessible only to signed-in users.
+- **Model-Based Chat Routing** in the chat input:
+   - `Auto (/chat)` routes to `/chat`
+   - `deepseek` routes to `/modelchat`
+   - `gemini` routes to `/modelchat`
+- **Mobile-Optimized Input Bar**:
+   - Single attachment icon
+   - Single model-selection icon
+
+### Environment Variables (Current)
+
+Use `.env.local` for local development (preferred), or `.env`:
+
+```bash
+VITE_LEGAL_CHAT_API_BASE_URL=https://nyaya.orbloop.in
+VITE_CLERK_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
+```
+
+> Clerk React Quickstart: https://clerk.com/docs/react/getting-started/quickstart
+
+### Request Flow Diagram
+
+```mermaid
+flowchart TD
+      U[User Opens App] --> M[src/main.tsx]
+      M --> C[ClerkProvider]
+      C --> R[Router]
+
+      R -->|/ask| G{Signed in?}
+      G -->|No| A[Show SignInButton / SignUpButton]
+      G -->|Yes| CH[Render Chat Screen]
+
+      CH --> S[User selects model in input bar]
+      S --> D{Model choice}
+      D -->|Auto| E1[POST /chat]
+      D -->|deepseek| E2[POST /modelchat with model=deepseek]
+      D -->|gemini| E3[POST /modelchat with model=gemini]
+
+      E1 --> F[Response Formatter]
+      E2 --> F
+      E3 --> F
+
+      F --> V[Display Cleaned Answer in Chat Bubble]
+```
 
 ---
 

@@ -16,6 +16,27 @@ export interface ModelChatRequest extends ChatRequest {
 	model: RetrievalModel;
 }
 
+export type RlmStreamEventName = "status" | "turn" | "output" | "done" | "error" | string;
+
+export const DEFAULT_RLM_MODEL = "deepseek-chat";
+
+export interface RlmStreamEvent {
+	event: RlmStreamEventName;
+	message?: string;
+	response?: string;
+	model?: string;
+	files?: string[];
+	max_turns?: number;
+	[key: string]: unknown;
+}
+
+export interface RlmChatRequest {
+	question: string;
+	files: File[];
+	maxTurns?: number;
+	model?: string;
+}
+
 interface ChatResponse {
 	response: string;
 }
@@ -143,6 +164,39 @@ function parseSseEventBlock(block: string) {
 	};
 }
 
+function extractRlmEventMessage(event: RlmStreamEvent) {
+	if (typeof event.response === "string" && event.response.trim()) return event.response.trim();
+	if (typeof event.message === "string" && event.message.trim()) return event.message.trim();
+	return "";
+}
+
+function parseRlmEventData(rawData: string) {
+	const trimmed = rawData.trim();
+	if (!trimmed) return null;
+
+	try {
+		const parsed = JSON.parse(trimmed) as Partial<RlmStreamEvent>;
+		const eventName = typeof parsed.event === "string" ? parsed.event : "message";
+		return {
+			...parsed,
+			event: eventName.toLowerCase() as RlmStreamEventName,
+		} as RlmStreamEvent;
+	} catch {
+		return {
+			event: "message",
+			message: trimmed,
+		} satisfies RlmStreamEvent;
+ 	}
+}
+
+async function readJsonFallbackResponse(res: Response) {
+	try {
+		return (await res.json()) as Partial<ChatResponse>;
+	} catch {
+		return null;
+ 	}
+}
+
 export async function chatStream(
 	request: ChatRequest,
 	onChunk: (chunk: string) => void,
@@ -214,4 +268,91 @@ export async function chatStream(
 	}
 
 	return fullText;
+}
+
+export async function rlmChatStream(
+	request: RlmChatRequest,
+	onEvent: (event: RlmStreamEvent) => void,
+	signal?: AbortSignal,
+): Promise<string> {
+	const formData = new FormData();
+	formData.append("question", request.question);
+	formData.append("max_turns", String(request.maxTurns ?? 10));
+	formData.append("model", request.model?.trim() || DEFAULT_RLM_MODEL);
+	for (const file of request.files) {
+		formData.append("files", file, file.name);
+	}
+
+	const res = await fetch(buildUrl("/rlm/chat/stream"), {
+		method: "POST",
+		body: formData,
+		signal,
+		headers: {
+			Accept: "text/event-stream, application/json, text/plain",
+		},
+	});
+
+	if (!res.ok) {
+		throw new Error(`RLM chat stream request failed with status ${res.status}`);
+	}
+
+	if (!res.body) {
+		const fallbackData = await readJsonFallbackResponse(res);
+		const fallbackText = typeof fallbackData?.response === "string" ? fallbackData.response : "";
+		if (fallbackText) {
+			onEvent({ event: "done", response: fallbackText, message: fallbackText });
+		}
+		return fallbackText;
+	}
+
+	const reader = res.body.getReader();
+	const decoder = new TextDecoder();
+	let buffer = "";
+	let finalText = "";
+	let shouldStop = false;
+
+	const processEventBlock = (block: string) => {
+		const { data } = parseSseEventBlock(block);
+		const parsedEvent = parseRlmEventData(data);
+		if (!parsedEvent) return;
+
+		onEvent(parsedEvent);
+
+		if (parsedEvent.event === "error") {
+			const message = extractRlmEventMessage(parsedEvent) || "RLM chat stream failed.";
+			throw new Error(message);
+		}
+
+		if (parsedEvent.event === "done") {
+			finalText = extractRlmEventMessage(parsedEvent) || finalText;
+			shouldStop = true;
+		}
+	};
+
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+
+			buffer += decoder.decode(value, { stream: true });
+			const eventBlocks = buffer.split(/\r?\n\r?\n/);
+			buffer = eventBlocks.pop() ?? "";
+
+			for (const block of eventBlocks) {
+				processEventBlock(block);
+				if (shouldStop) {
+					await reader.cancel();
+					return finalText;
+				}
+			}
+		}
+
+		if (buffer.trim()) {
+			processEventBlock(buffer);
+		}
+	} finally {
+		reader.releaseLock();
+	}
+
+	return finalText;
 }
