@@ -27,10 +27,10 @@ type MarkdownBlock =
 
 // ─── Sample suggestions shown on empty state ─────────────────────────────────
 const suggestions = [
-  "Punishments for abetment under BNS",
-  "BNS arrest and bail process",
-  "Cognizable vs non-cognizable offences",
-  "Rights of an accused during investigation",
+  "What is the punishment for theft?",
+  "Is theft a bailable offence?",
+  "what if civilian beats policemen?",
+  "Can a Traffic Police Take My Car Keys?",
 ];
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
