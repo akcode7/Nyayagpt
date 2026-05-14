@@ -30,7 +30,7 @@ const suggestions = [
   "What is the punishment for theft?",
   "Is theft a bailable offence?",
   "what if civilian beats policemen?",
-  "Can a Traffic Police Take My Car Keys?",
+  "Can a Traffic Police take my car keys if I am caught drunk driving?",
 ];
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
