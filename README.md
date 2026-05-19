@@ -25,7 +25,7 @@ This project now includes:
 Use `.env.local` for local development (preferred), or `.env`:
 
 ```bash
-VITE_LEGAL_CHAT_API_BASE_URL=https://nyaya.orbloop.in
+VITE_LEGAL_CHAT_API_BASE_URL=https://yourbaseurl.com
 VITE_CLERK_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 ```
 
