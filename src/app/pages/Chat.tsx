@@ -401,10 +401,10 @@ function BotBubble({ message }: { message: Message }) {
           display: "flex", alignItems: "center", justifyContent: "center",
           overflow: "hidden", padding: 3,
         }}>
-          <img src={logoImg} alt="NyayaBot" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+          <img src={logoImg} alt="NyayaGPT" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </div>
         <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", color: "#C5A059", fontFamily: "'DM Sans', sans-serif", textTransform: "uppercase" }}>
-          NyayaBot
+          NyayaGPT
         </span>
       </div>
       {/* Bubble */}
@@ -925,11 +925,11 @@ export const Chat = () => {
               borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center",
               overflow: "hidden", padding: 4,
             }}>
-              <img src={logoImg} alt="NyayaBot" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+              <img src={logoImg} alt="NyayaGPT" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
             </div>
             <div>
               <div style={{ fontSize: 17, fontWeight: 700, color: "#C5A059", letterSpacing: "-0.02em", fontFamily: "'Cormorant Garamond', serif" }}>
-                NyayaBot
+                NyayaGPT
               </div>
               <div style={{ fontSize: 9, letterSpacing: "0.2em", color: "rgba(201,195,185,0.5)", textTransform: "uppercase" }}>
                 Digital Magistrate
@@ -1089,7 +1089,7 @@ export const Chat = () => {
                 fontSize: 15, color: "rgba(201,195,185,0.55)", lineHeight: 1.7,
                 maxWidth: 400, marginBottom: 42, fontFamily: "'DM Sans', sans-serif",
               }}>
-                Ask NyayaBot about Indian law, constitutional rights, statutes, or legal procedures.
+                Ask NyayaGPT about Indian law, constitutional rights, statutes, or legal procedures.
               </p>
 
               {/* Suggestion chips */}
@@ -1134,7 +1134,7 @@ export const Chat = () => {
                     border: "1px solid rgba(197,160,89,0.3)", borderRadius: 6,
                     display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 3,
                   }}>
-                    <img src={logoImg} alt="NyayaBot" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                    <img src={logoImg} alt="NyayaGPT" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                   </div>
                   <div style={{ display: "flex", gap: 5, alignItems: "center", padding: "12px 18px", background: "#111", borderRadius: "4px 18px 18px 18px", border: "1px solid rgba(255,255,255,0.06)" }}>
                     {[0, 1, 2].map(i => (

@@ -67,7 +67,7 @@ function ChatMockup({ t }: { t: (k: string) => string }) {
               padding: 2,
             }}
           >
-            <img src={logoImg} alt="NyayaBot" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            <img src={logoImg} alt="NyayaGPT" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
           </div>
           <div>
             <div className="dm-sans" style={{ fontSize: 13, fontWeight: 600, color: "#0D0D0D" }}>
@@ -134,7 +134,7 @@ function ChatMockup({ t }: { t: (k: string) => string }) {
               overflow: "hidden",
             }}
           >
-            <img src={logoImg} alt="NyayaBot" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            <img src={logoImg} alt="NyayaGPT" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
           </div>
           <div style={{ flex: 1 }}>
             <div

@@ -70,7 +70,7 @@ export function Navbar() {
         <Link to="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
           <img
             src={logoImg}
-            alt="NyayaBot Logo"
+            alt="NyayaGPT Logo"
             style={{ width: 32, height: 32, objectFit: "contain", display: "block" }}
           />
           <span
@@ -82,7 +82,7 @@ export function Navbar() {
               letterSpacing: "-0.02em",
             }}
           >
-            NyayaBot
+            NyayaGPT
           </span>
         </Link>
 

@@ -85,14 +85,14 @@ export function Footer() {
           <Link to="/" style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14, textDecoration: "none" }}>
             <img
               src={logoImg}
-              alt="NyayaBot Logo"
+              alt="NyayaGPT Logo"
               style={{ width: 30, height: 30, objectFit: "contain", display: "block", filter: "brightness(0) invert(1)" }}
             />
             <span
               className="dm-sans"
               style={{ fontSize: 17, fontWeight: 700, color: "#FFFFFF" }}
             >
-              NyayaBot
+              NyayaGPT
             </span>
           </Link>
           <p

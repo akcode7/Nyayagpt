@@ -175,7 +175,7 @@ function FeatureCardContent({
             textTransform: "uppercase",
           }}
         >
-          NyayaBot
+          NyayaGPT
         </span>
         <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.06)" }} />
       </div>

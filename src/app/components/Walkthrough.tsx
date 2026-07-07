@@ -41,7 +41,7 @@ function ChatWindowMockup({ t }: { t: (k: string) => string }) {
             padding: 2,
           }}
         >
-          <img src={logoImg} alt="NyayaBot" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+          <img src={logoImg} alt="NyayaGPT" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </div>
         <div>
           <div className="dm-sans" style={{ fontSize: 12, fontWeight: 600, color: "#0D0D0D" }}>
@@ -193,7 +193,7 @@ function CitationMockup({ t }: { t: (k: string) => string }) {
               padding: 2,
             }}
           >
-            <img src={logoImg} alt="NyayaBot" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            <img src={logoImg} alt="NyayaGPT" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
           </div>
           <span className="dm-sans" style={{ fontSize: 12, fontWeight: 600, color: "#0D0D0D" }}>
             {t("walkCitHeader")}

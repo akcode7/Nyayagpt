@@ -34,7 +34,7 @@ function ProtectedChat() {
           }}
         >
           <h2 style={{ margin: 0, fontSize: "clamp(24px, 4vw, 34px)", color: "#e8e4de", fontFamily: "'Cormorant Garamond', serif" }}>
-            Sign In To Access NyayaBot Chat
+            Sign In To Access NyayaGPT Chat
           </h2>
           <p style={{ margin: 0, color: "rgba(232,228,222,0.72)", maxWidth: 560, fontFamily: "'DM Sans', sans-serif" }}>
             Choose an option to continue.
